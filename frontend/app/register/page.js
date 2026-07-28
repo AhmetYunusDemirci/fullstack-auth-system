@@ -84,7 +84,7 @@ export default function RegisterPage() {
           {/* Surname Input */}
           <input
             type="text"
-            name="name" // Not: İsterseniz bunu backend'e uygun şekilde "surname" yapabilirsiniz
+            name="surname"
             placeholder="Surname"
             value={formData.surname}
             onChange={handleChange}
