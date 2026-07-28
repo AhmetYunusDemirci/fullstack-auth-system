@@ -1,4 +1,6 @@
 require("dotenv").config();
+
+const cors = require("cors");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
@@ -7,8 +9,11 @@ const connectDB = require("./config/db");
 
 const app = express();
 
+
 // MongoDB bağlantısı
 connectDB();
+
+app.use(cors());
 
 app.use("/api/dashboard", dashboardRoutes);
 
