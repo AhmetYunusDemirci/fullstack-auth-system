@@ -1,13 +1,16 @@
 require("dotenv").config();
-
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const express = require("express");
 const connectDB = require("./config/db");
+
 
 const app = express();
 
 // MongoDB bağlantısı
 connectDB();
+
+app.use("/api/dashboard", dashboardRoutes);
 
 // Middleware
 app.use(express.json());
