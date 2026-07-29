@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
 
 // KAYIT OLMA FONKSİYONU
 const register = async (req, res) => {
@@ -152,14 +153,29 @@ const forgotPassword = async (req, res) => {
 
     const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
 
-    console.log("=================================");
-    console.log("PASSWORD RESET LINK");
-    console.log(resetUrl);
-    console.log("=================================");
+const html = `
+    <h2>Password Reset</h2>
 
-    res.status(200).json({
-      message: "Password reset link generated.",
-    });
+    <p>You requested a password reset.</p>
+
+    <p>
+      <a href="${resetUrl}">
+        Click here to reset your password
+      </a>
+    </p>
+
+    <p>This link will expire in 10 minutes.</p>
+`;
+
+await sendEmail({
+  email: user.email,
+  subject: "Password Reset",
+  html,
+});
+
+res.status(200).json({
+  message: "Password reset email sent successfully.",
+});
 
   } catch (error) {
     console.error(error);
@@ -215,12 +231,35 @@ const resetPassword = async (req, res) => {
       message: "Server Error",
     });
   }
+   
 };
 
-// Fonksiyonları dışa aktarma
+// DASHBOARD
+const getDashboard = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    res.status(200).json({
+      user,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Server Error",
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
   forgotPassword,
-  resetPassword, // resetPassword buraya eklendi
+  resetPassword,
+  getDashboard,
 };
