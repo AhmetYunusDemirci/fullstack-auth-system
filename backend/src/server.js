@@ -3,6 +3,7 @@ require("dotenv").config();
 const cors = require("cors");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 const express = require("express");
 const connectDB = require("./config/db");
 
@@ -19,6 +20,7 @@ app.use("/api/dashboard", dashboardRoutes);
 
 // Middleware
 app.use(express.json());
+app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;

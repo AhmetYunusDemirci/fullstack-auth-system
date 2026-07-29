@@ -45,16 +45,17 @@ const register = async (req, res) => {
 
     // Veritabanına kaydet
     await newUser.save();
-    const token = jwt.sign(
+     const token = jwt.sign(
   {
     id: newUser._id,
     email: newUser.email,
+    role: newUser.role,
   },
   process.env.JWT_SECRET,
   {
     expiresIn: "1d",
   }
-   );
+);
 
     res.status(201).json({
   message: "User registered successfully.",
@@ -99,17 +100,17 @@ const login = async (req, res) => {
       });
     }
 
-    // JWT oluştur
     const token = jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
-    );
+  {
+    id: user._id,
+    email: user.email,
+    role: user.role,
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: "1d",
+  }
+);
 
     res.status(200).json({
       message: "Login successful.",

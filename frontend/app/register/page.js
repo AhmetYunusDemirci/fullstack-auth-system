@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { registerUser } from "../../services/authService";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -82,12 +84,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-[420px]">
+    <main className="container-center bg-gray-100">
+      <div className="card w-[420px]">
 
-        <h1 className="text-3xl font-bold text-center mb-6">
-          Register
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Register</h1>
+        <p className="form-note text-center mb-6">Create your account</p>
 
         {success && (
           <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">
@@ -103,65 +104,25 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          <input
-            type="text"
-            name="name"
-            placeholder="Name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-3"
-          />
+          <Input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} />
 
-          <input
-            type="text"
-            name="surname"
-            placeholder="Surname"
-            value={formData.surname}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-3"
-          />
+          <Input type="text" name="surname" placeholder="Surname" value={formData.surname} onChange={handleChange} />
 
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-3"
-          />
+          <Input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full border rounded-lg p-3"
-          />
+          <Input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? "Registering..." : "Register"}
-          </button>
+          </Button>
 
         </form>
 
         <div className="text-center mt-6">
-
-          <p className="text-gray-600">
-            Already have an account?
-          </p>
-
-          <Link
-            href="/login"
-            className="text-blue-600 font-semibold hover:underline"
-          >
+          <p className="text-gray-600">Already have an account?</p>
+          <Link href="/login" className="text-blue-600 font-semibold hover:underline">
             Login
           </Link>
-
         </div>
 
       </div>

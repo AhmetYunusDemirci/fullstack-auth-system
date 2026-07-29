@@ -3,6 +3,8 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import API_URL from "../../../lib/api";
+import Input from "../../../components/Input";
+import Button from "../../../components/Button";
 export default function ResetPasswordPage({ params }) {
 
   const { token } = use(params);
@@ -66,13 +68,12 @@ export default function ResetPasswordPage({ params }) {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
+    <main className="container-center bg-gray-100">
 
-      <div className="bg-white p-8 rounded-xl shadow-lg w-[420px]">
+      <div className="card w-[420px]">
 
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Reset Password
-        </h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">Reset Password</h1>
+        <p className="form-note text-center mb-6">Choose a new secure password</p>
 
         {message && (
           <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">
@@ -88,21 +89,11 @@ export default function ResetPasswordPage({ params }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          <input
-            type="password"
-            placeholder="New Password"
-            className="w-full border rounded-lg p-3"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+          <Input type="password" placeholder="New Password" value={password} onChange={(e) => setPassword(e.target.value)} />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700"
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? "Resetting..." : "Reset Password"}
-          </button>
+          </Button>
 
         </form>
 

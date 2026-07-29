@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { loginUser } from "../../services/authService";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -76,12 +78,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-[420px]">
+    <main className="container-center bg-gray-100">
+      <div className="card w-[420px]">
 
-        <h1 className="text-3xl font-bold text-center mb-6">
-          Login
-        </h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Login</h1>
+        <p className="form-note text-center mb-6">Access your account securely</p>
 
         {success && (
           <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">
@@ -97,56 +98,39 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          <input
+          <Input
             type="email"
             name="email"
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           />
 
-          <input
+          <Input
             type="password"
             name="password"
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full border rounded-lg p-3"
           />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? "Logging in..." : "Login"}
-          </button>
+          </Button>
 
         </form>
 
         <div className="text-center mt-6">
-          <Link
-            href="/forgot-password"
-            className="text-red-600 hover:underline"
-          >
+          <Link href="/forgot-password" className="text-red-600 hover:underline">
             Forgot Password?
           </Link>
         </div>
 
         <div className="text-center mt-6">
-
-          <p className="text-gray-600">
-            Don't have an account?
-          </p>
-
-          <Link
-            href="/register"
-            className="text-blue-600 font-semibold hover:underline"
-          >
+          <p className="text-gray-600">Don't have an account?</p>
+          <Link href="/register" className="text-blue-600 font-semibold hover:underline">
             Register
           </Link>
-
         </div>
 
       </div>
