@@ -2,20 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import API_URL from "../../lib/api";
+import { loginUser } from "../../services/authService";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  // State Tanımlamaları
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Input Değişikliklerini Takip Eden Fonksiyon
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -23,52 +22,50 @@ export default function LoginPage() {
     });
   };
 
-  // Form Gönderme Fonksiyonu
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+      const response = await loginUser(formData);
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Giriş yapılamadı.");
+        setError(data.message || "Login failed.");
         setLoading(false);
         return;
       }
 
-      // Token'ı yerel depolamaya kaydet ve yönlendir
       localStorage.setItem("token", data.token);
+
       router.push("/dashboard");
     } catch (error) {
       setError("Server Error");
     }
+
     setLoading(false);
   };
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-[420px]">
-        <h1 className="text-3xl font-bold mb-6 text-center">Login</h1>
 
-        {/* Hata Mesajı Alanı */}
+      <div className="bg-white p-8 rounded-xl shadow-lg w-[420px]">
+
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Login
+        </h1>
+
         {error && (
-          <p className="bg-red-100 text-red-600 p-3 rounded-lg mb-4 text-sm font-medium">
+          <p className="bg-red-100 text-red-600 p-3 rounded-lg mb-4">
             {error}
           </p>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Email Input */}
+
           <input
             type="email"
             name="email"
@@ -79,7 +76,6 @@ export default function LoginPage() {
             required
           />
 
-          {/* Password Input */}
           <input
             type="password"
             name="password"
@@ -90,16 +86,62 @@ export default function LoginPage() {
             required
           />
 
-          {/* Submit Butonu */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400 transition-colors"
+            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+          <div className="text-center mt-5">
+
+<p>
+
+Don't have an account?
+
+</p>
+
+<a
+href="/register"
+className="text-blue-600"
+>
+
+Register
+
+</a>
+
+</div>
+
         </form>
+
+        <div className="text-center mt-6">
+
+          <a
+            href="/forgot-password"
+            className="text-red-600 hover:underline"
+          >
+            Forgot Password?
+          </a>
+
+        </div>
+
+        <div className="text-center mt-5">
+
+          <p className="text-gray-600">
+            Don't have an account?
+          </p>
+
+          <a
+            href="/register"
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Register
+          </a>
+
+        </div>
+
       </div>
+
     </main>
   );
 }
