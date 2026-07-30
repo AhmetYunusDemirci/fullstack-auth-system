@@ -18,20 +18,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      lowercase: true,
       trim: true,
+      lowercase: true,
     },
 
     password: {
       type: String,
       required: true,
-      minlength: 6,
     },
+
     role: {
-  type: String,
-  enum: ["user", "admin"],
-  default: "user",
-},
+      type: String,
+      enum: ["user", "seller", "admin"],
+      default: "user",
+    },
 
     resetPasswordToken: {
       type: String,
