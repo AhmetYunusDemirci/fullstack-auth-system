@@ -2,31 +2,40 @@ const express = require("express");
 
 const router = express.Router();
 
+const {
+  getUsers,
+  getStats,
+  createUser,
+  getUserById,
+  deleteUser,
+  updateUser,
+  updateUserRole,
+} = require("../controllers/adminController");
+
 const protect = require("../middleware/authMiddleware");
 const isAdmin = require("../middleware/isAdmin");
 
-const {
-  getAllUsers,
-  updateUser,
-  deleteUser,
-  changeUserRole,
-  createUser,
-  getAdminStats,
-} = require("../controllers/adminController");
+router.use(protect);
+router.use(isAdmin);
 
-router.post("/users", protect, isAdmin, createUser);
+router.get("/stats", getStats);
 
-router.put("/users/:id", protect, isAdmin, updateUser);
+router.get("/users", getUsers);
 
-router.get("/", protect, isAdmin, (req, res) => {
-  res.json({
-    message: "Welcome Admin Panel",
-  });
-});
+router.get("/users/:id", getUserById);
 
-router.delete("/users/:id", protect, isAdmin, deleteUser);
-router.patch("/users/:id/role", protect, isAdmin, changeUserRole);
-router.get("/stats", protect, isAdmin, getAdminStats);
-router.get("/users", protect, isAdmin, getAllUsers);
+router.post("/users", createUser);
+
+router.put("/users/:id", updateUser);
+
+router.patch(
+  "/users/:id/role",
+  updateUserRole
+);
+
+router.delete(
+  "/users/:id",
+  deleteUser
+);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { loginUser } from "../../services/authService";
 import Input from "../../components/Input";
@@ -9,7 +9,6 @@ import Button from "../../components/Button";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -21,10 +20,12 @@ export default function LoginPage() {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
-    if (searchParams.get("expired")) {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("expired")) {
       setError("Your session has expired. Please login again.");
     }
-  }, [searchParams]);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({

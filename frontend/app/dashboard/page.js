@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import API_URL from "../../lib/api";
 import Button from "../../components/Button";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [user, setUser] = useState(null);
 
@@ -71,14 +70,24 @@ export default function DashboardPage() {
           <p className="mb-4"><span className="font-bold">Name:</span> {user.name}</p>
           <p className="mb-4"><span className="font-bold">Surname:</span> {user.surname}</p>
           <p><span className="font-bold">Email:</span> {user.email}</p>
+          <p className="mt-4"><span className="font-bold">Role:</span> {user.role}</p>
         </div>
+
+        {user.role === "admin" && (
+          <Button
+            onClick={() => router.push("/admin")}
+            className="mt-6 bg-blue-600 hover:bg-blue-700"
+          >
+            Admin Panel
+          </Button>
+        )}
 
         <Button
           onClick={() => {
             localStorage.removeItem("token");
             router.push("/login");
           }}
-          className="mt-6 bg-red-600 hover:bg-red-700"
+          className="mt-4 bg-red-600 hover:bg-red-700"
         >
           Logout
         </Button>
