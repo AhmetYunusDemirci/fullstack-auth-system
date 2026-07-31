@@ -52,21 +52,30 @@ const createProduct = async (req, res) => {
       price,
       stock,
       image,
+      category,
     } = req.body;
 
-    if (!name || !description || price === undefined || stock === undefined) {
+    // Zorunlu alanlar
+    if (
+      !name ||
+      !description ||
+      price === undefined ||
+      stock === undefined ||
+      !category
+    ) {
       return res.status(400).json({
-        message: "All required fields must be filled.",
+        message:
+          "Name, description, price, stock and category are required.",
       });
     }
 
-    if (price < 0) {
+    if (Number(price) < 0) {
       return res.status(400).json({
         message: "Price cannot be negative.",
       });
     }
 
-    if (stock < 0) {
+    if (Number(stock) < 0) {
       return res.status(400).json({
         message: "Stock cannot be negative.",
       });
@@ -75,9 +84,15 @@ const createProduct = async (req, res) => {
     const product = new Product({
       name,
       description,
-      price,
-      stock,
+      price: Number(price),
+      stock: Number(stock),
+
+      // Image artık opsiyonel
       image: image || "",
+
+      category,
+
+      // Ürünü oluşturan seller
       seller: req.user.id,
     });
 
@@ -95,6 +110,7 @@ const createProduct = async (req, res) => {
 
     res.status(500).json({
       message: "Product could not be created.",
+      error: error.message,
     });
   }
 };
@@ -110,9 +126,14 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    if (product.seller.toString() !== req.user.id.toString()) {
+    // Sadece ürün sahibi değiştirebilir
+    if (
+      product.seller.toString() !==
+      req.user.id.toString()
+    ) {
       return res.status(403).json({
-        message: "You can only update your own products.",
+        message:
+          "You can only update your own products.",
       });
     }
 
@@ -122,21 +143,28 @@ const updateProduct = async (req, res) => {
       price,
       stock,
       image,
+      category,
     } = req.body;
 
     product.name = name ?? product.name;
-    product.description = description ?? product.description;
+    product.description =
+      description ?? product.description;
     product.price = price ?? product.price;
     product.stock = stock ?? product.stock;
+
+    // Image boş gönderilebilir
     product.image = image ?? product.image;
 
-    if (product.price < 0) {
+    product.category =
+      category ?? product.category;
+
+    if (Number(product.price) < 0) {
       return res.status(400).json({
         message: "Price cannot be negative.",
       });
     }
 
-    if (product.stock < 0) {
+    if (Number(product.stock) < 0) {
       return res.status(400).json({
         message: "Stock cannot be negative.",
       });
@@ -144,8 +172,12 @@ const updateProduct = async (req, res) => {
 
     await product.save();
 
-    const updatedProduct = await Product.findById(product._id)
-      .populate("seller", "name surname email");
+    const updatedProduct = await Product.findById(
+      product._id
+    ).populate(
+      "seller",
+      "name surname email"
+    );
 
     res.status(200).json({
       message: "Product updated successfully.",
@@ -163,7 +195,9 @@ const updateProduct = async (req, res) => {
 // ÜRÜNÜ SİL
 const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findById(
+      req.params.id
+    );
 
     if (!product) {
       return res.status(404).json({
@@ -171,13 +205,20 @@ const deleteProduct = async (req, res) => {
       });
     }
 
-    if (product.seller.toString() !== req.user.id.toString()) {
+    // Sadece kendi ürününü silebilir
+    if (
+      product.seller.toString() !==
+      req.user.id.toString()
+    ) {
       return res.status(403).json({
-        message: "You can only delete your own products.",
+        message:
+          "You can only delete your own products.",
       });
     }
 
-    await Product.findByIdAndDelete(req.params.id);
+    await Product.findByIdAndDelete(
+      req.params.id
+    );
 
     res.status(200).json({
       message: "Product deleted successfully.",
@@ -191,9 +232,34 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// SELLER'IN KENDİ ÜRÜNLERİNİ GETİR
+const getMyProducts = async (req, res) => {
+  try {
+    const products = await Product.find({
+      seller: req.user.id,
+    }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      products,
+    });
+  } catch (error) {
+    console.error(
+      "Get my products error:",
+      error
+    );
+
+    res.status(500).json({
+      message: "Seller products could not be loaded.",
+    });
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
+  getMyProducts,
   createProduct,
   updateProduct,
   deleteProduct,

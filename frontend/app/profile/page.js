@@ -333,10 +333,10 @@ export default function ProfilePage() {
               </p>
 
               <Link
-                href="/seller/products/new"
+  href="/seller/products"
                 className="block text-center mt-5 w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700"
               >
-                Sell a Product
+                My Products
               </Link>
 
             </div>

@@ -69,8 +69,8 @@ export default function LoginPage() {
       setSuccess("Login successful.");
 
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 1000);
+  router.push("/");
+}, 1000);
     } catch (error) {
       setError("Server Error");
     }

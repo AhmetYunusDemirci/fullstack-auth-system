@@ -8,10 +8,9 @@ const connectDB = require("./config/db");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
 const productRoutes = require("./routes/productRoutes");
+const cartRoutes = require("./routes/cartRoutes");
 const userRoutes = require("./routes/userRoutes");
-
 const app = express();
 
 // MongoDB bağlantısı
@@ -23,12 +22,13 @@ app.use(express.json());
 
 // Routes
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
 app.use("/api/users", userRoutes);
 
-// Ana sayfa
+// Ana route
 app.get("/", (req, res) => {
   res.send("Server is running...");
 });
