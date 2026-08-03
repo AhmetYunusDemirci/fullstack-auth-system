@@ -73,7 +73,7 @@ export default function RegisterPage() {
       setSuccess("Registration successful. Redirecting...");
 
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push("/");
       }, 1000);
     } catch (error) {
       setError("Server Error. Please try again later.");
