@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import API_URL from "../../lib/api";
+import Navbar from "../../components/Navbar";
+import Input from "../../components/Input";
+import Button from "../../components/Button";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -47,15 +50,13 @@ export default function AdminPage() {
       return;
     }
 
-    const decodedToken = JSON.parse(
-  atob(token.split(".")[1])
-);
+    const decodedToken = JSON.parse(atob(token.split(".")[1]));
 
-if (decodedToken.role !== "admin") {
-  alert("Admin access required.");
-  router.push("/dashboard");
-  return;
-}
+    if (decodedToken.role !== "admin") {
+      alert("Admin access required.");
+      router.push("/dashboard");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -64,7 +65,6 @@ if (decodedToken.role !== "admin") {
       // -------------------------
       // STATISTICS
       // -------------------------
-
       const statsResponse = await fetch(`${API_URL}/admin/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -78,10 +78,10 @@ if (decodedToken.role !== "admin") {
       }
 
       if (statsResponse.status === 403) {
-  alert("You do not have permission to access the admin panel.");
-  router.push("/dashboard");
-  return;
-}
+        alert("You do not have permission to access the admin panel.");
+        router.push("/dashboard");
+        return;
+      }
 
       if (!statsResponse.ok) {
         throw new Error("Failed to load statistics.");
@@ -92,7 +92,6 @@ if (decodedToken.role !== "admin") {
       // -------------------------
       // USERS
       // -------------------------
-
       const usersResponse = await fetch(
         `${API_URL}/admin/users?search=${encodeURIComponent(
           search
@@ -140,7 +139,6 @@ if (decodedToken.role !== "admin") {
   // -------------------------
   // SEARCH
   // -------------------------
-
   const handleSearch = (e) => {
     e.preventDefault();
 
@@ -150,58 +148,53 @@ if (decodedToken.role !== "admin") {
       loadAdminData();
     }
   };
-  
-  const handleViewUser = async (userId) => {
-  const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch(
-      `${API_URL}/admin/users/${userId}`,
-      {
+  // -------------------------
+  // VIEW USER
+  // -------------------------
+  const handleViewUser = async (userId) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Failed to load user.");
+        return;
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(data.message || "Failed to load user.");
-      return;
+      setViewingUser(data.user);
+    } catch (error) {
+      console.error(error);
+      alert("Server Error");
     }
+  };
 
-    setViewingUser(data.user);
-  } catch (error) {
-    console.error(error);
-    alert("Server Error");
-  }
-};
   // -------------------------
   // DELETE USER
   // -------------------------
-
   const handleDelete = async (userId) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this user?"
     );
 
-    if (!confirmDelete) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(
-        `${API_URL}/admin/users/${userId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
@@ -211,7 +204,6 @@ if (decodedToken.role !== "admin") {
       }
 
       alert("User deleted successfully.");
-
       loadAdminData();
     } catch (error) {
       console.error(error);
@@ -222,34 +214,23 @@ if (decodedToken.role !== "admin") {
   // -------------------------
   // CHANGE ROLE
   // -------------------------
-
   const handleRoleChange = async (userId, currentRole) => {
     const newRole = currentRole === "admin" ? "user" : "admin";
+    const confirmChange = window.confirm(`Change user role to ${newRole}?`);
 
-    const confirmChange = window.confirm(
-      `Change user role to ${newRole}?`
-    );
-
-    if (!confirmChange) {
-      return;
-    }
+    if (!confirmChange) return;
 
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(
-        `${API_URL}/admin/users/${userId}/role`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            role: newRole,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: newRole }),
+      });
 
       const data = await response.json();
 
@@ -259,7 +240,6 @@ if (decodedToken.role !== "admin") {
       }
 
       alert("User role updated successfully.");
-
       loadAdminData();
     } catch (error) {
       console.error(error);
@@ -270,10 +250,8 @@ if (decodedToken.role !== "admin") {
   // -------------------------
   // EDIT USER
   // -------------------------
-
   const openEditModal = (user) => {
     setEditingUser(user);
-
     setEditForm({
       name: user.name || "",
       surname: user.surname || "",
@@ -291,7 +269,6 @@ if (decodedToken.role !== "admin") {
   // -------------------------
   // CREATE USER
   // -------------------------
-
   const handleCreateChange = (e) => {
     setCreateForm({
       ...createForm,
@@ -300,684 +277,404 @@ if (decodedToken.role !== "admin") {
   };
 
   const handleCreateUser = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    const token = localStorage.getItem("token");
 
-  const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${API_URL}/admin/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(createForm),
+      });
 
-  try {
-    const response = await fetch(`${API_URL}/admin/users`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(createForm),
-    });
+      const data = await response.json();
 
-    const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || "Failed to create user.");
+        return;
+      }
 
-    if (!response.ok) {
-      alert(data.message || "Failed to create user.");
-      return;
+      alert("User created successfully.");
+
+      setCreateForm({
+        name: "",
+        surname: "",
+        email: "",
+        password: "",
+        role: "user",
+      });
+
+      setShowCreateModal(false);
+      await loadAdminData();
+      setPage(1);
+    } catch (error) {
+      console.error(error);
+      alert("Server Error");
     }
-
-    alert("User created successfully.");
-
-    setCreateForm({
-      name: "",
-      surname: "",
-      email: "",
-      password: "",
-      role: "user",
-    });
-
-    setShowCreateModal(false);
-
-    await loadAdminData();
-
-    setPage(1);
-  } catch (error) {
-    console.error(error);
-    alert("Server Error");
-  }
-};
+  };
 
   // -------------------------
   // UPDATE USER
   // -------------------------
-
   const handleUpdateUser = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
+    const token = localStorage.getItem("token");
 
-  const token = localStorage.getItem("token");
-
-  try {
-    const response = await fetch(
-      `${API_URL}/admin/users/${editingUser._id}`,
-      {
+    try {
+      const response = await fetch(`${API_URL}/admin/users/${editingUser._id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(editForm),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Failed to update user.");
+        return;
       }
-    );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(data.message || "Failed to update user.");
-      return;
+      alert("User updated successfully.");
+      setEditingUser(null);
+      await loadAdminData();
+    } catch (error) {
+      console.error(error);
+      alert("Server Error");
     }
-
-    alert("User updated successfully.");
-
-    setEditingUser(null);
-
-    await loadAdminData();
-  } catch (error) {
-    console.error(error);
-    alert("Server Error");
-  }
-};
+  };
 
   // -------------------------
-  // LOADING
+  // LOADING STATE
   // -------------------------
-
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <h2 className="text-2xl font-semibold">
-          Loading Admin Panel...
-        </h2>
+      <main className="min-h-screen bg-[#f7f8fc]">
+        <Navbar />
+        <div className="mx-auto max-w-7xl px-6 py-10">
+          <div className="skeleton mb-8 h-10 w-48 rounded" />
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="skeleton h-32 rounded-2xl" />
+            ))}
+          </div>
+          <div className="skeleton h-96 rounded-2xl" />
+        </div>
       </main>
     );
   }
 
   // -------------------------
-  // ERROR
+  // ERROR STATE
   // -------------------------
-
   if (error) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-8 rounded-xl shadow-lg">
-          <p className="text-red-600">{error}</p>
+      <main className="min-h-screen bg-[#f7f8fc]">
+        <Navbar />
+        <div className="mx-auto flex max-w-7xl items-center justify-center px-6 py-20">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center shadow-sm">
+            <h2 className="text-xl font-bold text-red-600">Access Error</h2>
+            <p className="mt-2 text-red-700">{error}</p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
-
+    <main className="min-h-screen bg-[#f7f8fc]">
+      <Navbar />
+      
+      <div className="mx-auto max-w-7xl px-6 py-10">
+        
         {/* HEADER */}
-
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
           <div>
-            <h1 className="text-4xl font-bold">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
               Admin Panel
             </h1>
-
-            <p className="text-gray-600 mt-2">
-              User management dashboard
+            <p className="mt-2 text-gray-500">
+              Manage users, roles, and platform statistics.
             </p>
           </div>
-
-          <button
-            onClick={() => router.push("/")}
-            className="bg-gray-800 text-white px-5 py-3 rounded-lg hover:bg-gray-900"
-          >
-            Home
-          </button>
         </div>
 
         {/* STATISTICS */}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-500">
-              Total Users
-            </p>
-
-            <h2 className="text-3xl font-bold mt-2">
-              {stats?.totalUsers || 0}
-            </h2>
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold uppercase tracking-wider text-gray-500">Total Users</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">👥</div>
+            </div>
+            <h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-500">
-              Total Admins
-            </p>
-
-            <h2 className="text-3xl font-bold mt-2">
-              {stats?.totalAdmins || 0}
-            </h2>
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold uppercase tracking-wider text-gray-500">Total Admins</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">🛡️</div>
+            </div>
+            <h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalAdmins || 0}</h2>
           </div>
 
-          <div className="bg-white p-6 rounded-xl shadow">
-            <p className="text-gray-500">
-              Normal Users
-            </p>
-
-            <h2 className="text-3xl font-bold mt-2">
-              {stats?.totalNormalUsers || 0}
-            </h2>
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:shadow-md">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold uppercase tracking-wider text-gray-500">Normal Users</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">👤</div>
+            </div>
+            <h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalNormalUsers || 0}</h2>
           </div>
-
         </div>
 
-        {/* USERS */}
-
-        <div className="bg-white rounded-xl shadow overflow-hidden">
-
-          <div className="p-6 border-b">
-
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-
+        {/* USERS TABLE SECTION */}
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          
+          {/* Section Header & Actions */}
+          <div className="border-b border-gray-100 p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-2xl font-bold">
-                  Users
-                </h2>
-
-                <p className="text-gray-500 mt-1">
-                  Total matching users: {totalUsers}
+                <h2 className="text-xl font-bold text-gray-900">User Management</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Total matching users: <span className="font-semibold text-gray-700">{totalUsers}</span>
                 </p>
               </div>
 
-              {/* SEARCH + ADD USER */}
-
-              <div className="flex flex-col md:flex-row gap-3">
-
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700"
-                >
-                  + Add User
-                </button>
-
-                <form
-                  onSubmit={handleSearch}
-                  className="flex gap-2"
-                >
-                  <input
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <form onSubmit={handleSearch} className="flex gap-2">
+                  <Input
                     type="text"
                     placeholder="Search users..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="border rounded-lg px-4 py-2 w-64"
+                    className="w-full sm:w-64"
                   />
-
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Search
-                  </button>
+                  <Button type="submit" className="w-auto px-5">Search</Button>
                 </form>
 
+                <Button variant="accent" onClick={() => setShowCreateModal(true)} className="w-auto px-5">
+                  + Add User
+                </Button>
               </div>
-
             </div>
-
           </div>
 
-          {/* TABLE */}
-
+          {/* Table */}
           <div className="overflow-x-auto">
-
-            <table className="w-full">
-
-              <thead className="bg-gray-50">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500">
                 <tr>
-
-                  <th className="text-left p-4">
-                    Name
-                  </th>
-
-                  <th className="text-left p-4">
-                    Surname
-                  </th>
-
-                  <th className="text-left p-4">
-                    Email
-                  </th>
-
-                  <th className="text-left p-4">
-                    Role
-                  </th>
-
-                  <th className="text-left p-4">
-                    Actions
-                  </th>
-
+                  <th className="px-6 py-4 font-semibold">Name</th>
+                  <th className="px-6 py-4 font-semibold">Surname</th>
+                  <th className="px-6 py-4 font-semibold">Email</th>
+                  <th className="px-6 py-4 font-semibold">Role</th>
+                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-
-              <tbody>
-
+              <tbody className="divide-y divide-gray-100 bg-white">
                 {users.length === 0 ? (
-
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center p-8 text-gray-500"
-                    >
+                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                       No users found.
                     </td>
                   </tr>
-
                 ) : (
-
                   users.map((user) => (
-
-                    <tr
-                      key={user._id}
-                      className="border-t hover:bg-gray-50"
-                    >
-
-                      <td className="p-4">
-                        {user.name}
-                      </td>
-
-                      <td className="p-4">
-                        {user.surname}
-                      </td>
-
-                      <td className="p-4">
-                        {user.email}
-                      </td>
-
-                      <td className="p-4">
-
+                    <tr key={user._id} className="transition hover:bg-gray-50/50">
+                      <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">{user.name}</td>
+                      <td className="whitespace-nowrap px-6 py-4">{user.surname}</td>
+                      <td className="whitespace-nowrap px-6 py-4">{user.email}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
                         <span
-                          className={
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                             user.role === "admin"
-                              ? "bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold"
-                              : "bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                          }
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
                         >
                           {user.role}
                         </span>
-
                       </td>
-
-                      <td className="p-4">
-
-                        <div className="flex flex-wrap gap-2">
-                            
-                            <button
-  onClick={() => handleViewUser(user._id)}
-  className="bg-gray-700 text-white px-3 py-2 rounded-lg hover:bg-gray-800"
->
-  View
-</button>  
+                      <td className="whitespace-nowrap px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleViewUser(user._id)}
+                            className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                          >
+                            View
+                          </button>
                           <button
                             onClick={() => openEditModal(user)}
-                            className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700"
+                            className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
                           >
                             Edit
                           </button>
-
                           <button
-                            onClick={() =>
-                              handleRoleChange(
-                                user._id,
-                                user.role
-                              )
-                            }
-                            className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700"
+                            onClick={() => handleRoleChange(user._id, user.role)}
+                            className="rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition hover:bg-purple-100"
                           >
-                            Change Role
+                            Role
                           </button>
-
                           <button
-                            onClick={() =>
-                              handleDelete(user._id)
-                            }
-                            className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700"
+                            onClick={() => handleDelete(user._id)}
+                            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100"
                           >
                             Delete
                           </button>
-
                         </div>
-
                       </td>
-
                     </tr>
-
                   ))
-
                 )}
-
               </tbody>
-
             </table>
-
           </div>
 
           {/* PAGINATION */}
-
-          <div className="flex justify-between items-center p-6 border-t">
-
+          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/50 px-6 py-4">
             <button
-              onClick={() =>
-                setPage((currentPage) => currentPage - 1)
-              }
+              onClick={() => setPage((p) => p - 1)}
               disabled={page === 1}
-              className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Previous
             </button>
-
-            <span className="font-semibold">
-              Page {page} of {totalPages}
+            <span className="text-sm font-medium text-gray-600">
+              Page <span className="font-semibold text-gray-900">{page}</span> of {totalPages}
             </span>
-
             <button
-              onClick={() =>
-                setPage((currentPage) => currentPage + 1)
-              }
+              onClick={() => setPage((p) => p + 1)}
               disabled={page >= totalPages}
-              className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </button>
-
           </div>
-
         </div>
-
       </div>
 
       {/* CREATE USER MODAL */}
-
       {showCreateModal && (
-
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-
-            <div className="flex justify-between items-center mb-6">
-
-              <h2 className="text-2xl font-bold">
-                Add New User
-              </h2>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Add New User</h2>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="text-gray-500 hover:text-gray-800 text-xl"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
               >
                 ✕
               </button>
-
             </div>
-
-            <form
-              onSubmit={handleCreateUser}
-              className="space-y-4"
-            >
-
-              <input
-                type="text"
-                name="name"
-                placeholder="Name"
-                value={createForm.name}
-                onChange={handleCreateChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <input
-                type="text"
-                name="surname"
-                placeholder="Surname"
-                value={createForm.surname}
-                onChange={handleCreateChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={createForm.email}
-                onChange={handleCreateChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                value={createForm.password}
-                onChange={handleCreateChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <select
-                name="role"
-                value={createForm.role}
-                onChange={handleCreateChange}
-                className="w-full border rounded-lg p-3"
-              >
-                <option value="user">
-                  User
-                </option>
-
-                <option value="admin">
-                  Admin
-                </option>
-              </select>
-
-              <div className="flex gap-3">
-
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700"
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <Input type="text" name="name" placeholder="First Name" value={createForm.name} onChange={handleCreateChange} required />
+              <Input type="text" name="surname" placeholder="Last Name" value={createForm.surname} onChange={handleCreateChange} required />
+              <Input type="email" name="email" placeholder="Email Address" value={createForm.email} onChange={handleCreateChange} required />
+              <Input type="password" name="password" placeholder="Password" value={createForm.password} onChange={handleCreateChange} required />
+              
+              <div className="input-wrapper">
+                <select
+                  name="role"
+                  value={createForm.role}
+                  onChange={handleCreateChange}
+                  className="input cursor-pointer appearance-none"
                 >
-                  Create User
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 bg-gray-200 py-3 rounded-lg hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
+              <div className="mt-6 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">
+                  Cancel
+                </Button>
+                <Button type="submit" variant="accent" className="flex-1">
+                  Create User
+                </Button>
+              </div>
             </form>
-
           </div>
-
         </div>
-
       )}
 
       {/* EDIT USER MODAL */}
-
       {editingUser && (
-
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-
-            <div className="flex justify-between items-center mb-6">
-
-              <h2 className="text-2xl font-bold">
-                Edit User
-              </h2>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
               <button
                 onClick={() => setEditingUser(null)}
-                className="text-gray-500 hover:text-gray-800 text-xl"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
               >
                 ✕
               </button>
-
             </div>
-
-            <form
-              onSubmit={handleUpdateUser}
-              className="space-y-4"
-            >
-
-              <input
-                type="text"
-                name="name"
-                placeholder="Name"
-                value={editForm.name}
-                onChange={handleEditChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <input
-                type="text"
-                name="surname"
-                placeholder="Surname"
-                value={editForm.surname}
-                onChange={handleEditChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                value={editForm.email}
-                onChange={handleEditChange}
-                className="w-full border rounded-lg p-3"
-                required
-              />
-
-              <div className="flex gap-3">
-
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700"
-                >
-                  Save Changes
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="flex-1 bg-gray-200 py-3 rounded-lg hover:bg-gray-300"
-                >
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <Input type="text" name="name" placeholder="First Name" value={editForm.name} onChange={handleEditChange} required />
+              <Input type="text" name="surname" placeholder="Last Name" value={editForm.surname} onChange={handleEditChange} required />
+              <Input type="email" name="email" placeholder="Email Address" value={editForm.email} onChange={handleEditChange} required />
+              
+              <div className="mt-6 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setEditingUser(null)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">
                   Cancel
-                </button>
-
+                </Button>
+                <Button type="submit" className="flex-1">
+                  Save Changes
+                </Button>
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
-     {/* VIEW USER MODAL */}
 
-{viewingUser && (
-
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-
-    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-
-      <div className="flex justify-between items-center mb-6">
-
-        <h2 className="text-2xl font-bold">
-          User Details
-        </h2>
-
-        <button
-          onClick={() => setViewingUser(null)}
-          className="text-gray-500 hover:text-gray-800 text-xl"
-        >
-          ✕
-        </button>
-
-      </div>
-
-      <div className="space-y-4">
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-500">
-            Name
-          </p>
-
-          <p className="font-semibold text-lg">
-            {viewingUser.name}
-          </p>
+      {/* VIEW USER MODAL */}
+      {viewingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">User Details</h2>
+              <button
+                onClick={() => setViewingUser(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Name</p>
+                <p className="mt-1 font-medium text-gray-900">{viewingUser.name}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Surname</p>
+                <p className="mt-1 font-medium text-gray-900">{viewingUser.surname}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Email</p>
+                <p className="mt-1 font-medium text-gray-900">{viewingUser.email}</p>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Role</p>
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${viewingUser.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-200 text-gray-800'}`}>
+                  {viewingUser.role}
+                </span>
+              </div>
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">User ID</p>
+                <p className="mt-1 break-all font-mono text-sm text-gray-600">{viewingUser._id}</p>
+              </div>
+            </div>
+            <Button onClick={() => setViewingUser(null)} className="mt-6 w-full">
+              Close
+            </Button>
+          </div>
         </div>
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-500">
-            Surname
-          </p>
-
-          <p className="font-semibold text-lg">
-            {viewingUser.surname}
-          </p>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-500">
-            Email
-          </p>
-
-          <p className="font-semibold text-lg">
-            {viewingUser.email}
-          </p>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-500">
-            Role
-          </p>
-
-          <p className="font-semibold text-lg">
-            {viewingUser.role}
-          </p>
-        </div>
-
-        <div className="border rounded-lg p-4 bg-gray-50">
-          <p className="text-sm text-gray-500">
-            User ID
-          </p>
-
-          <p className="font-mono text-sm break-all">
-            {viewingUser._id}
-          </p>
-        </div>
-
-      </div>
-
-      <button
-        onClick={() => setViewingUser(null)}
-        className="mt-6 w-full bg-gray-800 text-white py-3 rounded-lg hover:bg-gray-900"
-      >
-        Close
-      </button>
-
-    </div>
-
-  </div>
-
-)}
+      )}
     </main>
   );
 }
-

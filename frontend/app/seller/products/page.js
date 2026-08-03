@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import API_URL from "../../../lib/api";
+import Navbar from "../../../components/Navbar";
+import Button from "../../../components/Button";
 
 export default function SellerProductsPage() {
   const router = useRouter();
@@ -24,14 +26,11 @@ export default function SellerProductsPage() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${API_URL}/products/my-products`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/products/my-products`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
@@ -42,24 +41,19 @@ export default function SellerProductsPage() {
       }
 
       if (response.status === 403) {
-        setError(
-          "Only sellers can access this page."
-        );
+        setError("Only sellers can access this page.");
         return;
       }
 
       if (!response.ok) {
-        setError(
-          data.message ||
-            "Products could not be loaded."
-        );
+        setError(data.message || "Products could not be loaded.");
         return;
       }
 
       setProducts(data.products || []);
     } catch (error) {
       console.error(error);
-      setError("Server Error");
+      setError("Unable to connect to the server.");
     } finally {
       setLoading(false);
     }
@@ -72,46 +66,33 @@ export default function SellerProductsPage() {
   // -------------------------
   // DELETE PRODUCT
   // -------------------------
-
   const handleDelete = async (productId) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
+      "Are you sure you want to delete this product? This action cannot be undone."
     );
 
-    if (!confirmDelete) {
-      return;
-    }
+    if (!confirmDelete) return;
 
     const token = localStorage.getItem("token");
 
     try {
-      const response = await fetch(
-        `${API_URL}/products/${productId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/products/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
       if (!response.ok) {
-        alert(
-          data.message ||
-            "Product could not be deleted."
-        );
+        alert(data.message || "Product could not be deleted.");
         return;
       }
 
-      alert("Product deleted successfully.");
-
+      // Başarılı silme işlemi sonrası state'i güncelle
       setProducts((currentProducts) =>
-        currentProducts.filter(
-          (product) =>
-            product._id !== productId
-        )
+        currentProducts.filter((product) => product._id !== productId)
       );
     } catch (error) {
       console.error(error);
@@ -120,263 +101,191 @@ export default function SellerProductsPage() {
   };
 
   // -------------------------
-  // LOADING
+  // LOADING STATE (Skeleton)
   // -------------------------
-
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center bg-gray-100">
-        <h2 className="text-2xl font-semibold">
-          Loading your products...
-        </h2>
+      <main className="min-h-screen bg-[#f7f8fc]">
+        <Navbar />
+        <section className="mx-auto max-w-7xl px-6 py-14">
+          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="skeleton mb-2 h-10 w-64 rounded" />
+              <div className="skeleton h-5 w-80 rounded" />
+            </div>
+            <div className="skeleton h-12 w-48 rounded-xl" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                <div className="skeleton h-56 w-full" />
+                <div className="space-y-4 p-6">
+                  <div className="skeleton h-6 w-3/4 rounded" />
+                  <div className="skeleton h-4 w-full rounded" />
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="skeleton h-16 rounded-xl" />
+                    <div className="skeleton h-16 rounded-xl" />
+                  </div>
+                  <div className="skeleton mt-4 h-10 w-full rounded-xl" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-[#f7f8fc]">
+      <Navbar />
 
-      {/* HEADER */}
-
-      <header className="bg-white shadow-sm">
-
-        <div className="max-w-7xl mx-auto px-6 py-5">
-
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-
-            <div>
-
-              <Link href="/">
-                <h1 className="text-3xl font-bold text-blue-600">
-                  MyStore
-                </h1>
-              </Link>
-
-              <p className="text-gray-500 mt-1">
-                Seller Product Management
-              </p>
-
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-
-              <Link
-                href="/"
-                className="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900"
-              >
-                Home
-              </Link>
-
-              <Link
-                href="/profile"
-                className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700"
-              >
-                Profile
-              </Link>
-
-            
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </header>
-
-      {/* CONTENT */}
-
-      <section className="max-w-7xl mx-auto px-6 py-10">
-
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
-
+      <section className="mx-auto max-w-7xl px-6 py-14">
+        
+        {/* HEADER */}
+        <div className="mb-10 flex flex-col items-start justify-between gap-5 md:flex-row md:items-center">
           <div>
-
-            <h1 className="text-4xl font-bold">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
               My Products
             </h1>
-
-            <p className="text-gray-500 mt-2">
-              Manage the products you have published.
+            <p className="mt-2 text-gray-500">
+              Manage the products you have published on the marketplace.
             </p>
-
           </div>
-
-          <Link
-            href="/seller/products/new"
-            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
-          >
-            + Add New Product
+          <Link href="/seller/products/new" className="w-full md:w-auto">
+            <Button variant="accent" className="px-6">
+              + Add New Product
+            </Button>
           </Link>
-
         </div>
 
         {/* ERROR */}
-
         {error && (
-          <div className="bg-red-100 text-red-700 p-5 rounded-xl mb-6">
-            {error}
+          <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-6 flex items-start gap-4">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold">
+              !
+            </div>
+            <div>
+              <h3 className="font-bold text-red-800">Access Denied</h3>
+              <p className="mt-1 text-sm text-red-700">{error}</p>
+            </div>
           </div>
         )}
 
         {/* EMPTY */}
-
         {!error && products.length === 0 && (
-
-          <div className="bg-white rounded-2xl shadow p-12 text-center">
-
-            <div className="text-5xl mb-5">
+          <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-14 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 text-4xl">
               📦
             </div>
-
-            <h2 className="text-2xl font-bold">
-              You have no products
+            <h2 className="mt-5 text-2xl font-bold text-gray-900">
+              You haven't added any products yet
             </h2>
-
-            <p className="text-gray-500 mt-2">
-              Start selling by publishing your first product.
+            <p className="mt-2 text-gray-500">
+              Start your selling journey by publishing your first product to the marketplace.
             </p>
-
-            <Link
-              href="/seller/products/new"
-              className="inline-block mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-            >
-              Sell a Product
+            <Link href="/seller/products/new">
+              <Button variant="accent" className="mt-8 inline-flex w-auto px-8">
+                Sell a Product
+              </Button>
             </Link>
-
           </div>
-
         )}
 
-        {/* PRODUCTS */}
-
+        {/* PRODUCTS GRID */}
         {!error && products.length > 0 && (
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {products.map((product) => (
-
               <div
                 key={product._id}
-                className="bg-white rounded-2xl shadow overflow-hidden"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all hover:border-blue-200 hover:shadow-lg hover:shadow-blue-900/5"
               >
-
                 {/* IMAGE */}
-
-                <div className="h-56 bg-gray-200 flex items-center justify-center overflow-hidden">
-
+                <div className="relative h-56 w-full overflow-hidden bg-gray-100">
                   {product.image ? (
-
                     <img
                       src={product.image}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
-
                   ) : (
-
-                    <span className="text-gray-400">
-                      No Image
-                    </span>
-
+                    <div className="flex h-full items-center justify-center text-sm font-medium text-gray-400">
+                      No Image Available
+                    </div>
                   )}
-
+                  
+                  {/* CATEGORY BADGE */}
+                  <div className="absolute left-4 top-4">
+                    <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-gray-700 shadow-sm backdrop-blur">
+                      {product.category}
+                    </span>
+                  </div>
                 </div>
 
                 {/* PRODUCT INFO */}
-
-                <div className="p-6">
-
-                  <h2 className="text-xl font-bold truncate">
+                <div className="flex flex-1 flex-col p-6">
+                  <h2 className="truncate text-xl font-bold text-gray-900">
                     {product.name}
                   </h2>
-
-                  <p className="text-gray-500 mt-2 line-clamp-2">
+                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-500">
                     {product.description}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-4 mt-5">
-
-                    <div className="bg-gray-50 rounded-lg p-3">
-
-                      <p className="text-sm text-gray-500">
+                  {/* STATS */}
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
                         Price
                       </p>
-
-                      <p className="text-xl font-bold text-blue-600">
+                      <p className="mt-1 text-xl font-bold text-blue-600">
                         ${product.price}
                       </p>
-
                     </div>
-
-                    <div className="bg-gray-50 rounded-lg p-3">
-
-                      <p className="text-sm text-gray-500">
+                    <div className="rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
                         Stock
                       </p>
-
                       <p
-                        className={
-                          product.stock > 0
-                            ? "text-xl font-bold text-green-600"
-                            : "text-xl font-bold text-red-600"
-                        }
+                        className={`mt-1 text-xl font-bold ${
+                          product.stock > 0 ? "text-emerald-600" : "text-red-500"
+                        }`}
                       >
                         {product.stock}
                       </p>
-
                     </div>
-
                   </div>
-
-                  <p className="text-sm text-gray-500 mt-4">
-                    Category:{" "}
-                    <span className="font-semibold">
-                      {product.category}
-                    </span>
-                  </p>
 
                   {/* ACTIONS */}
-
-                  <div className="flex gap-3 mt-6">
-
-                    <Link
-                      href={`/products/${product._id}`}
-                      className="flex-1 text-center bg-gray-800 text-white py-2 rounded-lg hover:bg-gray-900"
+                  <div className="mt-6 mt-auto flex flex-col gap-3 pt-6">
+                    <div className="flex gap-3">
+                      <Link
+                        href={`/products/${product._id}`}
+                        className="flex flex-1 items-center justify-center rounded-xl bg-gray-100 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
+                      >
+                        View Public
+                      </Link>
+                      <Link
+                        href={`/seller/products/edit/${product._id}`}
+                        className="flex flex-1 items-center justify-center rounded-xl bg-blue-50 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 hover:text-blue-800"
+                      >
+                        Edit Item
+                      </Link>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(product._id)}
+                      className="w-full rounded-xl border border-red-100 bg-white py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-600"
                     >
-                      View
-                    </Link>
-
-                    <Link
-                      href={`/seller/products/edit/${product._id}`}
-                      className="flex-1 text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
-                    >
-                      Edit
-                    </Link>
-
+                      Delete Product
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() =>
-                      handleDelete(product._id)
-                    }
-                    className="w-full mt-3 bg-red-600 text-white py-2 rounded-lg hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-
                 </div>
-
               </div>
-
             ))}
-
           </div>
-
         )}
-
       </section>
-
     </main>
   );
 }

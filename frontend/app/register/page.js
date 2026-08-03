@@ -70,58 +70,141 @@ export default function RegisterPage() {
 
       localStorage.setItem("token", data.token);
 
-      setSuccess("Registration successful.");
+      setSuccess("Registration successful. Redirecting...");
 
       setTimeout(() => {
         router.push("/dashboard");
       }, 1000);
-
     } catch (error) {
-      setError("Server Error");
+      setError("Server Error. Please try again later.");
     }
 
     setLoading(false);
   };
 
   return (
-    <main className="container-center bg-gray-100">
-      <div className="card w-[420px]">
+    <main className="relative flex min-h-screen items-center justify-center p-4 overflow-hidden">
+      
+      {/* BACKGROUND IMAGE & BLUR EFFECT */}
+      <div 
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('https://plus.unsplash.com/premium_photo-1684785617105-2ebfbd278671?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')" }}
+      />
+      
+      {/* OVERLAY */}
+      <div className="absolute inset-0 z-0 bg-blue-900/20 backdrop-blur-[8px]" />
 
-        <h1 className="text-3xl font-bold text-center mb-2">Register</h1>
-        <p className="form-note text-center mb-6">Create your account</p>
+      {/* REGISTER CARD (Glassmorphism Effect) */}
+      <div className="relative z-10 w-full max-w-[480px] rounded-3xl border border-white/40 bg-white/95 p-8 shadow-2xl backdrop-blur-xl sm:p-10">
+        
+        {/* BRANDING */}
+        <div className="mb-8 text-center">
+          <Link href="/">
+            <h1 className="text-4xl font-bold tracking-tight text-blue-600 transition hover:text-blue-700">
+              MyStore
+            </h1>
+          </Link>
+          <p className="mt-3 text-sm font-medium text-gray-500">
+            Create an account to start shopping.
+          </p>
+        </div>
 
+        {/* ALERTS */}
         {success && (
-          <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">
-            {success}
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/90 p-4">
+            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-200 text-xs font-bold text-emerald-700">
+              ✓
+            </div>
+            <p className="text-sm font-medium text-emerald-800">{success}</p>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-4">
-            {error}
+          <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50/90 p-4">
+            <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-200 text-xs font-bold text-red-700">
+              !
+            </div>
+            <p className="text-sm font-medium text-red-800">{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* FORM */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          
+          {/* NAME & SURNAME (Grid Layout) */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                First Name
+              </label>
+              <Input 
+                type="text" 
+                name="name" 
+                placeholder="John" 
+                value={formData.name} 
+                onChange={handleChange} 
+                className="bg-white/80" 
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                Last Name
+              </label>
+              <Input 
+                type="text" 
+                name="surname" 
+                placeholder="Doe" 
+                value={formData.surname} 
+                onChange={handleChange} 
+                className="bg-white/80" 
+              />
+            </div>
+          </div>
 
-          <Input type="text" name="name" placeholder="Name" value={formData.name} onChange={handleChange} />
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-900">
+              Email Address
+            </label>
+            <Input 
+              type="email" 
+              name="email" 
+              placeholder="you@example.com" 
+              value={formData.email} 
+              onChange={handleChange} 
+              className="bg-white/80"
+            />
+          </div>
 
-          <Input type="text" name="surname" placeholder="Surname" value={formData.surname} onChange={handleChange} />
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-900">
+              Password
+            </label>
+            <Input 
+              type="password" 
+              name="password" 
+              placeholder="Min. 6 characters" 
+              value={formData.password} 
+              onChange={handleChange} 
+              className="bg-white/80"
+            />
+          </div>
 
-          <Input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} />
-
-          <Input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} />
-
-          <Button type="submit" disabled={loading}>
-            {loading ? "Registering..." : "Register"}
-          </Button>
-
+          <div className="pt-2">
+            <Button type="submit" disabled={loading} className="w-full shadow-lg shadow-blue-600/20">
+              {loading ? "Creating Account..." : "Register"}
+            </Button>
+          </div>
+          
         </form>
 
-        <div className="text-center mt-6">
-          <p className="text-gray-600">Already have an account?</p>
-          <Link href="/login" className="text-blue-600 font-semibold hover:underline">
-            Login
+        {/* LOGIN LINK */}
+        <div className="mt-8 border-t border-gray-100 pt-6 text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-bold text-blue-600 transition hover:text-blue-700 hover:underline"
+          >
+            Sign in
           </Link>
         </div>
 

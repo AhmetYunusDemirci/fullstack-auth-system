@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API_URL from "../../../../lib/api";
+import Navbar from "../../../../components/Navbar";
+import Input from "../../../../components/Input";
+import Button from "../../../../components/Button";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -87,8 +90,8 @@ export default function NewProductPage() {
       setSuccess("Product created successfully.");
 
       setTimeout(() => {
-        router.push("/");
-      }, 1000);
+        router.push("/seller/products"); // Ürün başarıyla eklenince satıcı paneline dönmesi UX açısından daha iyi olabilir (istediğin gibi değiştirebilirsin).
+      }, 1500);
     } catch (error) {
       console.error(error);
       setError("Server Error");
@@ -98,186 +101,154 @@ export default function NewProductPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-[#f7f8fc]">
+      <Navbar />
 
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-6 py-5">
-
-          <div className="flex justify-between items-center">
-
-            <Link href="/">
-              <h1 className="text-3xl font-bold text-blue-600">
-                MyStore
-              </h1>
-            </Link>
-
-            <div className="flex gap-3">
-
-              <Link
-                href="/"
-                className="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900"
-              >
-                Home
-              </Link>
-
-              <Link
-                href="/profile"
-                className="bg-purple-600 text-white px-5 py-2 rounded-lg hover:bg-purple-700"
-              >
-                Profile
-              </Link>
-
-            </div>
-
+      <section className="mx-auto max-w-3xl px-6 py-14">
+        <div className="card">
+          
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              Sell a Product
+            </h1>
+            <p className="mt-2 text-gray-500">
+              Add your product to the marketplace and start selling today.
+            </p>
           </div>
 
-        </div>
-      </header>
-
-      <section className="max-w-3xl mx-auto px-6 py-10">
-
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-
-          <h1 className="text-3xl font-bold">
-            Sell a Product
-          </h1>
-
-          <p className="text-gray-500 mt-2">
-            Add your product to the marketplace.
-          </p>
-
+          {/* ERROR ALERT */}
           {error && (
-            <div className="mt-6 bg-red-100 text-red-700 p-4 rounded-lg">
-              {error}
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3">
+               <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-red-200 text-xs font-bold text-red-700 mt-0.5">
+                !
+              </div>
+              <p className="text-sm font-medium text-red-800">{error}</p>
             </div>
           )}
 
+          {/* SUCCESS ALERT */}
           {success && (
-            <div className="mt-6 bg-green-100 text-green-700 p-4 rounded-lg">
-              {success}
+            <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-start gap-3">
+              <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-200 text-xs font-bold text-emerald-700 mt-0.5">
+                ✓
+              </div>
+              <p className="text-sm font-medium text-emerald-800">{success}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            {/* NAME */}
             <div>
-              <label className="block font-semibold mb-2">
-                Product Name
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                Product Name <span className="text-red-500">*</span>
               </label>
-
-              <input
+              <Input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                placeholder="Example: iPhone 15"
-                className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Example: iPhone 15 Pro Max"
               />
             </div>
 
+            {/* DESCRIPTION */}
             <div>
-              <label className="block font-semibold mb-2">
-                Description
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                Description <span className="text-red-500">*</span>
               </label>
-
+              {/* Input bileşeni sadece input tag'i içerdiği için burada .input class'ını textarea'ya direkt verdik */}
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
-                placeholder="Describe your product..."
+                placeholder="Describe your product's features, condition, etc..."
                 rows={5}
-                className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                className="input resize-y"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
+            {/* PRICE & STOCK */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
-                <label className="block font-semibold mb-2">
-                  Price
+                <label className="mb-2 block text-sm font-semibold text-gray-900">
+                  Price ($) <span className="text-red-500">*</span>
                 </label>
-
-                <input
+                <Input
                   type="number"
                   name="price"
                   value={formData.price}
                   onChange={handleChange}
                   min="0"
                   step="0.01"
-                  placeholder="0"
-                  className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold mb-2">
-                  Stock
+                <label className="mb-2 block text-sm font-semibold text-gray-900">
+                  Stock <span className="text-red-500">*</span>
                 </label>
-
-                <input
+                <Input
                   type="number"
                   name="stock"
                   value={formData.stock}
                   onChange={handleChange}
                   min="0"
                   placeholder="0"
-                  className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
             </div>
 
+            {/* CATEGORY */}
             <div>
-              <label className="block font-semibold mb-2">
-                Category
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                Category <span className="text-red-500">*</span>
               </label>
-
-              <input
+              <Input
                 type="text"
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                placeholder="Example: Electronics"
-                className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Example: Electronics, Clothing, etc."
               />
             </div>
 
+            {/* IMAGE */}
             <div>
-  <label className="block font-semibold mb-2">
-    Image URL
-    <span className="text-gray-400 font-normal ml-2">
-      (Optional)
-    </span>
-  </label>
+              <label className="mb-2 block text-sm font-semibold text-gray-900">
+                Image URL
+                <span className="ml-2 font-normal text-gray-400">
+                  (Optional)
+                </span>
+              </label>
+              <Input
+                type="text"
+                name="image"
+                value={formData.image}
+                onChange={handleChange}
+                placeholder="https://example.com/product-image.jpg"
+              />
+              <p className="mt-2 text-xs text-gray-500">
+                Provide a direct link to an image (JPEG, PNG). Leave empty if you don't have one.
+              </p>
+            </div>
 
-  <input
-    type="text"
-    name="image"
-    value={formData.image}
-    onChange={handleChange}
-    placeholder="https://example.com/image.jpg"
-    className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
-  />
-
-  <p className="text-sm text-gray-500 mt-2">
-    You can leave this empty if you do not have an image.
-  </p>
-</div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400"
-            >
-              {loading ? "Creating Product..." : "Publish Product"}
-            </button>
+            {/* SUBMIT BUTTON */}
+            <div className="pt-4 border-t border-gray-100">
+              <Button
+                type="submit"
+                disabled={loading}
+                variant="accent"
+                className="w-full sm:w-auto sm:px-10"
+              >
+                {loading ? "Publishing..." : "Publish Product"}
+              </Button>
+            </div>
 
           </form>
-
         </div>
-
       </section>
-
     </main>
   );
 }
