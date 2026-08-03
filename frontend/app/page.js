@@ -21,7 +21,6 @@ export default function HomePage() {
       setError("");
 
       const response = await fetch(`${API_URL}/products`);
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -33,7 +32,7 @@ export default function HomePage() {
       setFilteredProducts(data.products || []);
     } catch (error) {
       console.error(error);
-      setError("Server Error");
+      setError("Unable to connect to the server.");
     } finally {
       setLoading(false);
     }
@@ -43,7 +42,6 @@ export default function HomePage() {
     loadProducts();
   }, []);
 
-  // FILTER PRODUCTS
   useEffect(() => {
     const searchValue = search.toLowerCase().trim();
 
@@ -64,101 +62,318 @@ export default function HomePage() {
     setFilteredProducts(filtered);
   }, [search, category, products]);
 
-  // GET CATEGORIES
   const categories = [
     "All",
     ...new Set(
       products
         .map((product) => product.category)
-        .filter((category) => category)
+        .filter(Boolean)
     ),
   ];
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <main className="min-h-screen bg-[#f7f8fc]">
 
       <Navbar />
 
-      {/* PRODUCTS */}
+      {/* HERO */}
 
-      <section className="max-w-7xl mx-auto px-6 py-10">
+      <section className="relative overflow-hidden bg-[#0f172a]">
 
-        {/* TITLE */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute -top-32 -right-20 h-96 w-96 rounded-full bg-blue-500 blur-3xl" />
+          <div className="absolute -bottom-40 -left-20 h-96 w-96 rounded-full bg-indigo-500 blur-3xl" />
+        </div>
 
-        <div className="mb-8">
+        <div className="relative max-w-7xl mx-auto px-6 py-20 lg:py-28">
 
-          <h2 className="text-3xl font-bold">
-            Products
-          </h2>
+          <div className="max-w-3xl">
 
-          <p className="text-gray-500 mt-2">
-            Discover products from our sellers.
-          </p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-blue-200 backdrop-blur-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Discover something you love
+            </div>
+
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Everything you need,
+              <span className="block text-blue-400">
+                all in one place.
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              Explore products from trusted sellers and discover
+              great deals made for everyday life.
+            </p>
+
+            {/* HERO SEARCH */}
+
+            <div className="mt-9 max-w-2xl">
+
+              <div className="flex items-center rounded-2xl bg-white p-2 shadow-2xl">
+
+                <div className="flex h-12 w-12 items-center justify-center text-gray-400">
+
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m20 20-3.5-3.5" />
+                  </svg>
+
+                </div>
+
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search for products..."
+                  className="h-12 flex-1 bg-transparent px-2 text-gray-900 outline-none placeholder:text-gray-400"
+                />
+
+                <button
+                  onClick={() =>
+                    document
+                      .getElementById("products")
+                      ?.scrollIntoView({
+                        behavior: "smooth",
+                      })
+                  }
+                  className="hidden rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700 sm:block"
+                >
+                  Search
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
 
         </div>
 
-        {/* SEARCH + FILTER */}
+      </section>
 
-        <div className="bg-white rounded-xl shadow p-5 mb-8">
+      {/* TRUST BAR */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <section className="border-b border-gray-200 bg-white">
+
+        <div className="mx-auto grid max-w-7xl grid-cols-1 divide-y divide-gray-200 px-6 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+
+          <div className="flex items-center gap-4 py-5 sm:px-8">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+
+              <svg
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
+                <path d="m9 12 2 2 4-4" />
+              </svg>
+
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900">
+                Secure Shopping
+              </p>
+
+              <p className="text-sm text-gray-500">
+                Safe and protected
+              </p>
+            </div>
+
+          </div>
+
+          <div className="flex items-center gap-4 py-5 sm:px-8">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+
+              <svg
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M3 7h11v10H3z" />
+                <path d="M14 10h4l3 3v4h-7z" />
+                <circle cx="7" cy="19" r="2" />
+                <circle cx="17" cy="19" r="2" />
+              </svg>
+
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900">
+                Trusted Sellers
+              </p>
+
+              <p className="text-sm text-gray-500">
+                Quality products
+              </p>
+            </div>
+
+          </div>
+
+          <div className="flex items-center gap-4 py-5 sm:px-8">
+
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+
+              <svg
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 2v20" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+
+            </div>
+
+            <div>
+              <p className="font-semibold text-gray-900">
+                Great Value
+              </p>
+
+              <p className="text-sm text-gray-500">
+                Competitive prices
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* PRODUCTS */}
+
+      <section
+        id="products"
+        className="mx-auto max-w-7xl px-6 py-14 lg:py-20"
+      >
+
+        {/* SECTION HEADER */}
+
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+
+          <div>
+
+            <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+              Marketplace
+            </p>
+
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+              Explore our products
+            </h2>
+
+            <p className="mt-2 text-gray-500">
+              Find products selected from our marketplace.
+            </p>
+
+          </div>
+
+          {!loading && !error && (
+            <div className="text-sm text-gray-500">
+              <span className="font-semibold text-gray-900">
+                {filteredProducts.length}
+              </span>{" "}
+              products found
+            </div>
+          )}
+
+        </div>
+
+        {/* FILTERS */}
+
+        <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
 
             {/* SEARCH */}
 
-            <div>
+            <div className="relative flex-1">
 
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Search Products
-              </label>
+              <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+
+              </div>
 
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by product name, description or category..."
-                className="w-full border rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Search products..."
+                className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-12 pr-4 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
 
             </div>
 
             {/* CATEGORY */}
 
-            <div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-12 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-medium text-gray-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 lg:w-52"
+            >
 
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Category
-              </label>
+              {categories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
 
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full border rounded-lg px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
-              >
-
-                {categories.map((item) => (
-
-                  <option
-                    key={item}
-                    value={item}
-                  >
-                    {item}
-                  </option>
-
-                ))}
-
-              </select>
-
-            </div>
+            </select>
 
           </div>
 
-          {/* FILTER RESULT */}
+          {/* CATEGORY CHIPS */}
 
-          {!loading && !error && (
+          {categories.length > 1 && (
 
-            <div className="mt-4 text-sm text-gray-500">
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
 
-              {filteredProducts.length} product(s) found.
+              {categories.map((item) => (
+
+                <button
+                  key={item}
+                  onClick={() => setCategory(item)}
+                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
+                    category === item
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {item}
+                </button>
+
+              ))}
 
             </div>
 
@@ -170,11 +385,32 @@ export default function HomePage() {
 
         {loading && (
 
-          <div className="flex justify-center py-20">
+          <div className="grid grid-cols-1 gap-6 pt-10 sm:grid-cols-2 lg:grid-cols-4">
 
-            <p className="text-xl text-gray-500">
-              Loading products...
-            </p>
+            {[1, 2, 3, 4].map((item) => (
+
+              <div
+                key={item}
+                className="overflow-hidden rounded-2xl border border-gray-200 bg-white"
+              >
+
+                <div className="skeleton h-64" />
+
+                <div className="space-y-4 p-5">
+
+                  <div className="skeleton h-5 w-3/4 rounded" />
+
+                  <div className="skeleton h-4 w-full rounded" />
+
+                  <div className="skeleton h-4 w-2/3 rounded" />
+
+                  <div className="skeleton h-8 w-1/3 rounded" />
+
+                </div>
+
+              </div>
+
+            ))}
 
           </div>
 
@@ -184,8 +420,29 @@ export default function HomePage() {
 
         {!loading && error && (
 
-          <div className="bg-red-100 text-red-700 p-5 rounded-xl">
-            {error}
+          <div className="mt-10 rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
+
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
+
+              !
+
+            </div>
+
+            <h3 className="mt-4 text-xl font-bold text-gray-900">
+              Something went wrong
+            </h3>
+
+            <p className="mt-2 text-gray-600">
+              {error}
+            </p>
+
+            <button
+              onClick={loadProducts}
+              className="mt-6 rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white transition hover:bg-gray-800"
+            >
+              Try Again
+            </button>
+
           </div>
 
         )}
@@ -196,15 +453,29 @@ export default function HomePage() {
           !error &&
           filteredProducts.length === 0 && (
 
-            <div className="bg-white rounded-xl shadow p-10 text-center">
+            <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-14 text-center">
 
-              <h3 className="text-2xl font-semibold">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-2xl">
+                🔎
+              </div>
+
+              <h3 className="mt-5 text-2xl font-bold text-gray-900">
                 No products found
               </h3>
 
-              <p className="text-gray-500 mt-2">
-                Try changing your search or category.
+              <p className="mt-2 text-gray-500">
+                Try another search term or category.
               </p>
+
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setCategory("All");
+                }}
+                className="mt-6 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+              >
+                Clear Filters
+              </button>
 
             </div>
 
@@ -216,7 +487,7 @@ export default function HomePage() {
           !error &&
           filteredProducts.length > 0 && (
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
               {filteredProducts.map((product) => (
 
@@ -226,73 +497,125 @@ export default function HomePage() {
                   className="group"
                 >
 
-                  <div className="bg-white rounded-xl shadow overflow-hidden hover:shadow-xl transition">
+                  <article className="product-card overflow-hidden rounded-2xl border border-gray-200 bg-white">
 
                     {/* IMAGE */}
 
-                    <div className="h-52 bg-gray-200 flex items-center justify-center overflow-hidden">
+                    <div className="relative h-64 overflow-hidden bg-gray-100">
 
                       {product.image ? (
 
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition"
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
                         />
 
                       ) : (
 
-                        <div className="text-gray-400 text-lg">
+                        <div className="flex h-full items-center justify-center text-gray-400">
                           No Image
                         </div>
 
                       )}
 
-                    </div>
+                      {/* STOCK BADGE */}
 
-                    {/* PRODUCT INFO */}
+                      <div className="absolute left-4 top-4">
 
-                    <div className="p-5">
+                        {product.stock > 0 ? (
 
-                      <h3 className="text-xl font-semibold truncate">
-                        {product.name}
-                      </h3>
+                          <span className="rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-emerald-600 shadow-sm backdrop-blur">
+                            In Stock
+                          </span>
 
-                      <p className="text-gray-500 mt-2 line-clamp-2">
-                        {product.description}
-                      </p>
+                        ) : (
+
+                          <span className="rounded-full bg-red-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm">
+                            Sold Out
+                          </span>
+
+                        )}
+
+                      </div>
+
+                      {/* CATEGORY */}
 
                       {product.category && (
 
-                        <span className="inline-block mt-3 bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                          {product.category}
-                        </span>
+                        <div className="absolute right-4 top-4">
+
+                          <span className="rounded-full bg-gray-900/80 px-3 py-1.5 text-xs font-medium text-white backdrop-blur">
+                            {product.category}
+                          </span>
+
+                        </div>
 
                       )}
 
-                      <div className="flex justify-between items-center mt-5">
+                      {/* VIEW */}
 
-                        <span className="text-2xl font-bold text-blue-600">
-                          ${product.price}
-                        </span>
+                      <div className="absolute inset-x-0 bottom-0 translate-y-full bg-gradient-to-t from-black/60 to-transparent px-4 pb-4 pt-12 transition duration-300 group-hover:translate-y-0">
 
-                        <span
-                          className={
-                            product.stock > 0
-                              ? "text-green-600 text-sm font-semibold"
-                              : "text-red-600 text-sm font-semibold"
-                          }
-                        >
-                          {product.stock > 0
-                            ? `${product.stock} in stock`
-                            : "Out of stock"}
+                        <span className="text-sm font-semibold text-white">
+                          View product →
                         </span>
 
                       </div>
 
                     </div>
 
-                  </div>
+                    {/* INFO */}
+
+                    <div className="p-5">
+
+                      <h3 className="truncate text-lg font-bold text-gray-900 transition group-hover:text-blue-600">
+                        {product.name}
+                      </h3>
+
+                      <p className="mt-2 min-h-[40px] line-clamp-2 text-sm leading-5 text-gray-500">
+                        {product.description || "Discover more about this product."}
+                      </p>
+
+                      <div className="mt-5 flex items-end justify-between">
+
+                        <div>
+
+                          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                            Price
+                          </p>
+
+                          <p className="mt-1 text-2xl font-bold tracking-tight text-gray-900">
+                            ${product.price}
+                          </p>
+
+                        </div>
+
+                        <div className="text-right">
+
+                          <p className="text-xs text-gray-400">
+                            Available
+                          </p>
+
+                          <p
+                            className={`mt-1 text-sm font-semibold ${
+                              product.stock > 0
+                                ? "text-emerald-600"
+                                : "text-red-500"
+                            }`}
+                          >
+                            {product.stock > 0
+                              ? `${product.stock} left`
+                              : "Unavailable"}
+                          </p>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  </article>
 
                 </Link>
 
@@ -303,6 +626,69 @@ export default function HomePage() {
           )}
 
       </section>
+
+      {/* CTA */}
+
+      <section className="mx-auto max-w-7xl px-6 pb-16">
+
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-12 sm:px-12">
+
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+
+          <div className="relative max-w-2xl">
+
+            <p className="text-sm font-bold uppercase tracking-widest text-blue-100">
+              MyStore Marketplace
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">
+              Find your next favorite product.
+            </h2>
+
+            <p className="mt-4 text-blue-100">
+              Browse our marketplace and discover products
+              from sellers on MyStore.
+            </p>
+
+            <button
+              onClick={() =>
+                document
+                  .getElementById("products")
+                  ?.scrollIntoView({
+                    behavior: "smooth",
+                  })
+              }
+              className="mt-7 rounded-xl bg-white px-6 py-3 font-bold text-blue-600 shadow-lg transition hover:bg-gray-100"
+            >
+              Browse Products
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* FOOTER */}
+
+      <footer className="border-t border-gray-200 bg-white">
+
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+
+          <div>
+            <span className="font-bold text-gray-900">
+              MyStore
+            </span>{" "}
+            — Your online marketplace.
+          </div>
+
+          <div>
+            © {new Date().getFullYear()} MyStore. All rights reserved.
+          </div>
+
+        </div>
+
+      </footer>
 
     </main>
   );

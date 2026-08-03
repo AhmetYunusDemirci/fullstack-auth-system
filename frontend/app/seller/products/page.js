@@ -174,12 +174,7 @@ export default function SellerProductsPage() {
                 Profile
               </Link>
 
-              <Link
-                href="/seller/products/new"
-                className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700"
-              >
-                + Sell a Product
-              </Link>
+            
 
             </div>
 

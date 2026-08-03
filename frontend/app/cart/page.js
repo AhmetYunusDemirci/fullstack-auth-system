@@ -240,7 +240,7 @@ export default function CartPage() {
                 href="/"
                 className="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900"
               >
-                Products
+                Home
               </Link>
 
               <Link

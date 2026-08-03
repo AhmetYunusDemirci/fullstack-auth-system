@@ -428,10 +428,10 @@ if (decodedToken.role !== "admin") {
           </div>
 
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/")}
             className="bg-gray-800 text-white px-5 py-3 rounded-lg hover:bg-gray-900"
           >
-            Back to Dashboard
+            Home
           </button>
         </div>
 

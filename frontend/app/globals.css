@@ -1,106 +1,252 @@
 @import "tailwindcss";
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-:root{
-  --bg: #f4f6f9;
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --background: #f7f8fc;
+  --foreground: #0f172a;
+
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+
+  --muted: #64748b;
+  --border: #e5e7eb;
+
   --card: #ffffff;
-  --primary: #2563eb; /* blue-600 */
-  --accent: #10b981; /* green-500 */
-  --muted: #6b7280; /* gray-500 */
 }
 
-body{
-  background: var(--bg);
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  color: #0f172a;
+body {
+  background: var(--background);
+  color: var(--foreground);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* -------------------------------- */
+/* LINKS */
+/* -------------------------------- */
+
+a {
+  text-decoration: none;
+}
+
+/* -------------------------------- */
+/* NAVIGATION */
+/* -------------------------------- */
 
 @layer components {
-  .card {
-    @apply bg-white p-8 rounded-2xl shadow-lg;
-    background-color: var(--card);
+
+  .nav-link {
+    @apply rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 transition-all;
   }
 
-  .btn {
-    @apply w-full text-white py-3 rounded-lg font-semibold transition-colors;
+  .nav-link:hover {
+    @apply bg-gray-100 text-gray-900;
   }
 
-  .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700;
-    background-color: var(--primary);
-  }
-
-  .btn-accent {
-    @apply bg-green-600 hover:bg-green-700;
-    background-color: var(--accent);
-  }
+  /* -------------------------------- */
+  /* FORM ELEMENTS */
+  /* -------------------------------- */
 
   .input {
-    @apply w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white;
+    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 outline-none transition;
+  }
+
+  .input:focus {
+    @apply border-blue-500 ring-4 ring-blue-500/10;
   }
 
   .form-note {
     @apply text-sm text-gray-500;
   }
-}
 
-@layer utilities {
-  .container-center {
-    @apply min-h-screen flex items-center justify-center;
+  /* -------------------------------- */
+  /* CARDS */
+  /* -------------------------------- */
+
+  .card {
+    @apply rounded-2xl border border-gray-200 bg-white p-8 shadow-sm;
   }
-}
 
-/* Additional UI polish: icons, animations, responsive tweaks */
+  /* -------------------------------- */
+  /* BUTTONS */
+  /* -------------------------------- */
 
-@layer components {
+  .btn {
+    @apply w-full rounded-xl py-3 font-semibold text-white transition-all;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700;
+  }
+
+  .btn-accent {
+    @apply bg-emerald-600 hover:bg-emerald-700;
+  }
+
+  /* -------------------------------- */
+  /* PRODUCT CARD */
+  /* -------------------------------- */
+
+  .product-card {
+    transition:
+      transform 250ms ease,
+      box-shadow 250ms ease,
+      border-color 250ms ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-6px);
+    border-color: #dbeafe;
+    box-shadow:
+      0 20px 40px rgba(15, 23, 42, 0.10),
+      0 8px 16px rgba(15, 23, 42, 0.05);
+  }
+
+  /* -------------------------------- */
+  /* CENTER CONTAINER */
+  /* -------------------------------- */
+
+  .container-center {
+    @apply flex min-h-screen items-center justify-center;
+  }
+
+  /* -------------------------------- */
+  /* INPUT WRAPPER */
+  /* -------------------------------- */
+
   .input-wrapper {
     @apply relative;
   }
 
   .input-icon {
-    @apply absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none;
-    width: 20px;
-    height: 20px;
+    @apply pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400;
   }
 
-  .card {
-    transition: transform 220ms cubic-bezier(.2,.9,.3,1), box-shadow 220ms;
-  }
+}
 
-  .card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(15,23,42,0.12);
-  }
+/* -------------------------------- */
+/* SKELETON LOADING */
+/* -------------------------------- */
 
-  .fade-in {
-    animation: fadeIn 360ms ease both;
-  }
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb;
+}
 
-  .float {
-    animation: float 6s ease-in-out infinite;
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+
+  content: "";
+
+  transform: translateX(-100%);
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.65),
+    transparent
+  );
+
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  100% {
+    transform: translateX(100%);
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* -------------------------------- */
+/* FADE IN */
+/* -------------------------------- */
+
+.fade-in {
+  animation: fade-in 400ms ease both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* -------------------------------- */
+/* FLOAT */
+/* -------------------------------- */
+
+.float {
+  animation: float 6s ease-in-out infinite;
 }
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
 }
 
-/* Responsive adjustments */
+/* -------------------------------- */
+/* SCROLLBAR */
+/* -------------------------------- */
+
+::-webkit-scrollbar {
+  width: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* -------------------------------- */
+/* MOBILE */
+/* -------------------------------- */
+
 @media (max-width: 640px) {
-  .card { @apply p-6 w-[92%]; }
-  .input { @apply p-3 text-sm; }
-  .btn { @apply py-2 text-sm; }
+
+  .card {
+    @apply p-6;
+  }
+
+  .input {
+    @apply px-3 py-3 text-sm;
+  }
+
+  .btn {
+    @apply py-3 text-sm;
+  }
+
 }
