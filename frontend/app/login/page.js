@@ -138,7 +138,7 @@ export default function LoginPage() {
               placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
-              className="bg-white/80" /* Inputları da hafif şeffaf yaptık */
+              className="bg-white/80" /* Inputları da hafif şeffaf hale getirildi */
             />
           </div>
 
