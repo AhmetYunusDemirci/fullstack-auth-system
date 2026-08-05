@@ -58,54 +58,63 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
-  const handleBecomeSeller = async () => {
-    const token = localStorage.getItem("token");
+   
+const handleBecomeSeller = async () => {
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      router.push("/login");
-      return;
-    }
+  if (!token) {
+    router.push("/login");
+    return;
+  }
 
-    const confirmed = window.confirm(
-      "Do you want to become a seller?"
+  const confirmed = window.confirm(
+    "Do you want to become a seller?"
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setBecomingSeller(true);
+
+    const response = await fetch(
+      `${API_URL}/users/become-seller`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    if (!confirmed) {
+    const data = await response.json();
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+      router.push("/login");
       return;
     }
 
-    try {
-      setBecomingSeller(true);
-
-      const response = await fetch(
-        `${API_URL}/users/become-seller`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        alert(data.message || "Could not become seller.");
-        return;
-      }
-
-      alert("You are now a seller.");
-
-      localStorage.removeItem("token");
-
-      router.push("/login");
-    } catch (error) {
-      console.error(error);
-      alert("Server Error");
-    } finally {
-      setBecomingSeller(false);
+    if (!response.ok) {
+      alert(data.message || "Could not become seller.");
+      return;
     }
-  };
+
+    // Backend'in döndürdüğü güncel kullanıcı bilgisini kullan
+    setUser(data.user);
+
+    alert("You are now a seller.");
+
+  } catch (error) {
+    console.error(error);
+    alert("Server Error");
+  } finally {
+    setBecomingSeller(false);
+  }
+};
+
+
 
   if (loading) {
     return (
