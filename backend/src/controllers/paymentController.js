@@ -4,10 +4,11 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
 const User = require("../models/User");
+const Coupon = require("../models/Coupon"); 
 
 const processPayment = async (req, res) => {
   try {
-    const { addressForm, cardForm } = req.body;
+    const { addressForm, cardForm, couponCode } = req.body; // couponCode eklendi
 
     // 1. Kullanıcıyı ve Sepetini getir
     const user = await User.findById(req.user.id);
@@ -17,7 +18,17 @@ const processPayment = async (req, res) => {
       return res.status(400).json({ message: "Your cart is empty." });
     }
 
-    // 2. Sepet tutarını hesapla ve Iyzico basketItems formatına çevir (Fiyat Backend'den!)
+    // --- KUPON KONTROLÜ (GÜVENLİK İÇİN BACKEND'DE TEKRAR YAPILIYOR) ---
+    let discountPercentage = 0;
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+      if (coupon && coupon.isActive && new Date(coupon.expiryDate) > new Date()) {
+        discountPercentage = coupon.discountPercentage;
+      }
+    }
+    // -----------------------------------------------------------------
+
+      // 2. Sepet tutarını hesapla ve Iyzico basketItems formatına çevir (Fiyat Backend'den!)
     let totalPrice = 0;
     const basketItems = [];
 
@@ -45,11 +56,12 @@ const processPayment = async (req, res) => {
     }
 
     // 3. Iyzico Ödeme İsteği Nesnesi (Request Object)
+      // 3. Iyzico Ödeme İsteği Nesnesi (Request Object)
     const request = {
       locale: Iyzipay.LOCALE.TR,
       conversationId: "Order_" + Date.now(),
-      price: totalPrice.toString(),
-      paidPrice: totalPrice.toString(),
+      price: formattedTotalPrice,
+      paidPrice: formattedTotalPrice,
       currency: Iyzipay.CURRENCY.TRY,
       installment: "1",
       basketId: cart._id.toString(),

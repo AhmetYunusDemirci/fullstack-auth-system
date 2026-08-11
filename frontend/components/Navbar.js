@@ -115,6 +115,13 @@ export default function Navbar() {
             )}
 
             {user && (
+              <Link href="/wishlist" className="nav-link flex items-center gap-1.5 hover:text-red-500 transition">
+                <span className="text-lg">❤️</span>
+                <span className="hidden xl:inline">Wishlist</span>
+              </Link>
+            )}
+
+            {user && (
               <Link href="/cart" className="nav-link flex items-center gap-2">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="9" cy="20" r="1" />
@@ -231,6 +238,12 @@ export default function Navbar() {
               {user && (
                 <Link href="/my-orders" onClick={() => setMobileOpen(false)} className="rounded-xl px-4 py-3 font-medium text-gray-700 hover:bg-gray-100">
                   My Orders
+                </Link>
+              )}
+
+             {user && (
+                <Link href="/wishlist" onClick={() => setMobileOpen(false)} className="rounded-xl px-4 py-3 font-medium text-gray-700 hover:bg-gray-100 flex items-center gap-2">
+                  <span>❤️</span> My Wishlist
                 </Link>
               )}
 

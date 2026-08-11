@@ -37,6 +37,10 @@ export default function AdminPage() {
   const [viewingUser, setViewingUser] = useState(null);
   
   const [viewingMessage, setViewingMessage] = useState(null); // Mesaj okuma state'i
+  // KUPON STATES
+  const [coupons, setCoupons] = useState([]);
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponForm, setCouponForm] = useState({ code: "", discountPercentage: "", expiryDays: 30 });
   const [editingProduct, setEditingProduct] = useState(null);
   const [editProductForm, setEditProductForm] = useState({ name: "", price: 0, stock: 0, category: "" });
 
@@ -94,7 +98,9 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadAdminData();
+    loadCoupons();
   }, [page]);
+  
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -227,6 +233,48 @@ export default function AdminPage() {
     } catch (error) { console.error(error); }
   };
 
+  const loadCoupons = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_URL}/coupons`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (res.ok) setCoupons(data.coupons || []);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleCreateCoupon = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_URL}/coupons/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(couponForm)
+      });
+      if (res.ok) {
+        alert("Coupon created successfully!");
+        setShowCouponModal(false);
+        setCouponForm({ code: "", discountPercentage: "", expiryDays: 30 });
+        loadCoupons(); // Listeyi yenile
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to create coupon.");
+      }
+    } catch (err) { console.error(err); }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (!confirm("Are you sure you want to delete this coupon?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_URL}/coupons/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) loadCoupons(); // Listeyi yenile
+    } catch (err) { console.error(err); }
+  };
+
   // --- RENDERING ---
   if (loading) {
     return (
@@ -269,19 +317,21 @@ export default function AdminPage() {
         </div>
 
         {/* TABS MENU */}
-        <div className="mb-8 flex overflow-x-auto border-b border-gray-200">
-          {["dashboard", "users", "products", "orders", "tickets"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`border-b-2 px-6 py-3 text-sm font-semibold uppercase tracking-wider transition-colors whitespace-nowrap ${
-                activeTab === tab ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+<div className="mb-8 flex overflow-x-auto border-b border-gray-200 gap-4 pb-4">
+  {["dashboard", "users", "products", "orders", "tickets", "coupons"].map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`px-6 py-3 text-sm font-semibold uppercase tracking-wider transition-all whitespace-nowrap border-2 rounded-lg ${
+        activeTab === tab 
+          ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm" 
+          : "border-gray-200 bg-white text-gray-500 hover:border-gray-400 hover:bg-gray-50 hover:text-gray-800"
+      }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
 
         {/* TAB 1: DASHBOARD */}
         {activeTab === "dashboard" && (
@@ -471,6 +521,66 @@ export default function AdminPage() {
         )}
 
       </div>
+      {/* TAB 6: COUPONS */}
+        {activeTab === "coupons" && (
+          <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between border-b border-gray-100 bg-gray-50/50 p-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Discount Coupons</h3>
+                <p className="text-sm text-gray-500">Manage promotional codes and discounts.</p>
+              </div>
+              <Button onClick={() => setShowCouponModal(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600">
+                <span className="text-lg">+</span> Create Coupon
+              </Button>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-gray-600">
+                <thead className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Code</th>
+                    <th className="px-6 py-4 font-semibold">Discount</th>
+                    <th className="px-6 py-4 font-semibold">Status</th>
+                    <th className="px-6 py-4 font-semibold">Expiry Date</th>
+                    <th className="px-6 py-4 font-semibold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {coupons.length === 0 ? (
+                    <tr><td colSpan="5" className="px-6 py-8 text-center text-gray-500">No coupons found.</td></tr>
+                  ) : (
+                    coupons.map((coupon) => {
+                      const isExpired = new Date(coupon.expiryDate) < new Date();
+                      return (
+                        <tr key={coupon._id} className="transition hover:bg-gray-50/50">
+                          <td className="px-6 py-4 font-bold text-gray-900 tracking-wider">
+                            <span className="bg-gray-100 px-3 py-1 rounded-lg border border-gray-200">{coupon.code}</span>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-emerald-600">% {coupon.discountPercentage}</td>
+                          <td className="px-6 py-4">
+                            {isExpired ? (
+                              <span className="bg-red-100 text-red-700 px-2.5 py-1 rounded-full text-xs font-semibold">Expired</span>
+                            ) : coupon.isActive ? (
+                              <span className="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full text-xs font-semibold">Active</span>
+                            ) : (
+                              <span className="bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full text-xs font-semibold">Inactive</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-gray-500">{new Date(coupon.expiryDate).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 text-right">
+                            <button onClick={() => handleDeleteCoupon(coupon._id)} className="text-red-500 hover:text-red-700 font-medium text-sm bg-red-50 px-3 py-1.5 rounded-lg transition hover:bg-red-100">
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       {/* CREATE, EDIT VE VIEW MODALLARI AYNEN KORUNDU */}
       
@@ -608,7 +718,64 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+     {/* CREATE COUPON MODAL */}
+      {showCouponModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
+            <div className="mb-6 flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Create Coupon</h2>
+                <p className="text-sm text-gray-500 mt-1">Generate a new promotional code.</p>
+              </div>
+              <button onClick={() => setShowCouponModal(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900">✕</button>
+            </div>
 
+            <form onSubmit={handleCreateCoupon} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Coupon Code</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={couponForm.code} 
+                  onChange={(e) => setCouponForm({...couponForm, code: e.target.value.toUpperCase()})}
+                  className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900 font-bold tracking-wider" 
+                  placeholder="e.g. SUMMER24" 
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Discount (%)</label>
+                  <input 
+                    type="number" 
+                    min="1" max="99" required 
+                    value={couponForm.discountPercentage} 
+                    onChange={(e) => setCouponForm({...couponForm, discountPercentage: e.target.value})}
+                    className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900" 
+                    placeholder="20" 
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Valid For (Days)</label>
+                  <input 
+                    type="number" 
+                    min="1" required 
+                    value={couponForm.expiryDays} 
+                    onChange={(e) => setCouponForm({...couponForm, expiryDays: e.target.value})}
+                    className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900" 
+                    placeholder="30" 
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setShowCouponModal(false)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">Cancel</Button>
+                <Button type="submit" variant="accent" className="flex-1 bg-emerald-600 hover:bg-emerald-700 border-emerald-600">Create</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

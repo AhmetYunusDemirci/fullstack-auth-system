@@ -20,6 +20,9 @@ export default function ProductDetailPage() {
   const [cartMessage, setCartMessage] = useState("");
   const [cartError, setCartError] = useState("");
   const [showFullDescription, setShowFullDescription] = useState(false);
+  
+  const [isLiked, setIsLiked] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -52,8 +55,69 @@ export default function ProductDetailPage() {
     if (params.id) {
       loadProduct();
     }
+   }, [params.id]);
+
+  // -------------------------
+  // WISHLIST LOGIC
+  // -------------------------
+
+  useEffect(() => {
+    const checkWishlist = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return; // Giriş yapmamışsa favorileri kontrol etme
+
+      try {
+        const response = await fetch(`${API_URL}/wishlist`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.wishlist) {
+          // Ürün favoriler listesinde var mı kontrol et
+          const liked = data.wishlist.products.some(
+            (p) => p._id === params.id || p === params.id
+          );
+          setIsLiked(liked);
+        }
+      } catch (err) {
+        console.error("Wishlist check error:", err);
+      }
+    };
+
+    if (params.id) checkWishlist();
   }, [params.id]);
 
+  const handleToggleWishlist = async () => {
+    const token = localStorage.getItem("token");
+    
+    // Giriş yapmamışsa login sayfasına yönlendir
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      setWishlistLoading(true);
+      const response = await fetch(`${API_URL}/wishlist/toggle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productId: product._id }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setIsLiked(data.message === "Added to wishlist");
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
   // -------------------------
   // ADD TO CART
   // -------------------------
@@ -319,10 +383,21 @@ export default function ProductDetailPage() {
                   </div>
 
                 )}
+{/* WISHLIST HEART BUTTON */}
+                <button
+                  onClick={handleToggleWishlist}
+                  disabled={wishlistLoading}
+                  className="absolute top-5 right-5 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white/95 backdrop-blur-sm shadow-md transition-all duration-300 hover:scale-110 active:scale-95 disabled:opacity-50"
+                  title={isLiked ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <span className={`text-2xl transition-colors ${isLiked ? "text-red-500 drop-shadow-md" : "text-gray-300 grayscale"}`}>
+                    {isLiked ? "❤️" : "🤍"}
+                  </span>
+                </button>
 
                 {/* STOCK BADGE */}
 
-                <div className="absolute top-5 left-5">
+                <div className="absolute top-5 left-5 z-10">
 
                   {isInStock ? (
 

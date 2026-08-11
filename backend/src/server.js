@@ -14,6 +14,8 @@ const userRoutes = require("./routes/userRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const couponRoutes = require("./routes/couponRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 const app = express();
 
 // MongoDB bağlantısı
@@ -33,6 +35,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/wishlist", wishlistRoutes);
 
 // Ana route
 app.get("/", (req, res) => {

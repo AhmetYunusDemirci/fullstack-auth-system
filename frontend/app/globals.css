@@ -1,10 +1,9 @@
 @import "tailwindcss";
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* 
+  NOT: * { margin: 0; padding: 0; } kısmı kaldırıldı.
+  Çünkü Tailwind'in kendi doğal boşluk (Preflight) sistemini ezip sayfayı sıkıştırıyordu.
+*/
 
 html {
   scroll-behavior: smooth;
@@ -26,9 +25,21 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Sayfanın geniş ve ferah durması için eklendi */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: hidden; /* Sağa sola kaymaları engeller */
+}
+
+/* Ana içeriklerin sayfaya tam oturması için */
+main {
+  flex: 1;
+  width: 100%;
 }
 
 /* -------------------------------- */
@@ -40,7 +51,7 @@ a {
 }
 
 /* -------------------------------- */
-/* NAVIGATION */
+/* NAVIGATION & COMPONENTS */
 /* -------------------------------- */
 
 @layer components {
@@ -58,7 +69,7 @@ a {
   /* -------------------------------- */
 
   .input {
-    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 outline-none transition;
+    @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-gray-900 outline-none transition-all;
   }
 
   .input:focus {
@@ -74,7 +85,8 @@ a {
   /* -------------------------------- */
 
   .card {
-    @apply rounded-2xl border border-gray-200 bg-white p-8 shadow-sm;
+    /* w-full eklendi, daralma engellendi */
+    @apply w-full rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm; 
   }
 
   /* -------------------------------- */
@@ -82,15 +94,16 @@ a {
   /* -------------------------------- */
 
   .btn {
-    @apply w-full rounded-xl py-3 font-semibold text-white transition-all;
+    /* Tıklama efekti (active:scale) eklendi */
+    @apply w-full rounded-xl py-3 font-semibold text-white transition-all active:scale-[0.98];
   }
 
   .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700;
+    @apply bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-600/20;
   }
 
   .btn-accent {
-    @apply bg-emerald-600 hover:bg-emerald-700;
+    @apply bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20;
   }
 
   /* -------------------------------- */
@@ -117,7 +130,8 @@ a {
   /* -------------------------------- */
 
   .container-center {
-    @apply flex min-h-screen items-center justify-center;
+    /* Ferahlık için p-4 ve w-full eklendi */
+    @apply flex min-h-[80vh] w-full items-center justify-center p-4 sm:p-6;
   }
 
   /* -------------------------------- */
@@ -125,11 +139,12 @@ a {
   /* -------------------------------- */
 
   .input-wrapper {
-    @apply relative;
+    /* w-full eklendi, inputların daralması çözüldü */
+    @apply relative w-full;
   }
 
   .input-icon {
-    @apply pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400;
+    @apply pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400;
   }
 
 }
@@ -147,18 +162,14 @@ a {
 .skeleton::after {
   position: absolute;
   inset: 0;
-
   content: "";
-
   transform: translateX(-100%);
-
   background: linear-gradient(
     90deg,
     transparent,
     rgba(255, 255, 255, 0.65),
     transparent
   );
-
   animation: skeleton-loading 1.5s infinite;
 }
 
@@ -181,7 +192,6 @@ a {
     opacity: 0;
     transform: translateY(8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -197,16 +207,11 @@ a {
 }
 
 @keyframes float {
-  0% {
+  0%, 100% {
     transform: translateY(0);
   }
-
   50% {
     transform: translateY(-6px);
-  }
-
-  100% {
-    transform: translateY(0);
   }
 }
 
@@ -215,11 +220,12 @@ a {
 /* -------------------------------- */
 
 ::-webkit-scrollbar {
-  width: 9px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #f8fafc; /* Daha ferah bir gri */
 }
 
 ::-webkit-scrollbar-thumb {
@@ -238,15 +244,15 @@ a {
 @media (max-width: 640px) {
 
   .card {
-    @apply p-6;
+    @apply p-5;
   }
 
   .input {
-    @apply px-3 py-3 text-sm;
+    @apply px-3 py-2.5 text-sm;
   }
 
   .btn {
-    @apply py-3 text-sm;
+    @apply py-2.5 text-sm;
   }
 
 }
