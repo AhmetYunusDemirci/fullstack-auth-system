@@ -10,6 +10,13 @@ const {
   deleteUser,
   updateUser,
   updateUserRole,
+  getAdminProducts,
+  deleteAdminProduct,
+  updateAdminProduct,
+  getAdminOrders,
+  updateOrderStatus,
+  getAdminMessages,
+  updateMessageStatus
 } = require("../controllers/adminController");
 
 const protect = require("../middleware/authMiddleware");
@@ -37,5 +44,19 @@ router.delete(
   "/users/:id",
   deleteUser
 );
+// --- YENİ E-TİCARET ROTALARI ---
+
+// Ürünler
+router.get("/products", getAdminProducts);
+router.delete("/products/:id", deleteAdminProduct);
+router.put("/products/:id", updateAdminProduct); // Bunu ekledik
+
+// Siparişler
+router.get("/orders", getAdminOrders);
+router.patch("/orders/:id/status", updateOrderStatus);
+
+// Destek Talepleri
+router.get("/messages", getAdminMessages);
+router.patch("/messages/:id/status", updateMessageStatus);
 
 module.exports = router;

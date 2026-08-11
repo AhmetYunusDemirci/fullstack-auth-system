@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 
 // KULLANICI PROFİLİNİ GETİR
 const getProfile = async (req, res) => {
@@ -68,8 +69,71 @@ const becomeSeller = async (req, res) => {
     });
   }
 };
+// KULLANICI PROFİLİNİ GÜNCELLE
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found.",
+      });
+    }
+
+    const { name, surname, email, password } = req.body;
+
+    // Email'i güncellemek istiyorsa ve email değişmişse
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({
+          message: "Email is already in use.",
+        });
+      }
+      user.email = email;
+    }
+
+    // Ad ve soyad güncelleme
+    user.name = name || user.name;
+    user.surname = surname || user.surname;
+
+    // Şifre güncellemek istiyorsa (En az 6 karakter olmalı)
+    if (password) {
+       if (password.length < 6) {
+         return res.status(400).json({
+           message: "Password must be at least 6 characters.",
+         });
+       }
+       const salt = await bcrypt.genSalt(10);
+       user.password = await bcrypt.hash(password, salt);
+    }
+
+    await user.save();
+
+    // Güncellenmiş kullanıcıyı şifresiz olarak dön
+    const updatedUser = {
+      _id: user._id,
+      name: user.name,
+      surname: user.surname,
+      email: user.email,
+      role: user.role,
+    };
+
+    res.status(200).json({
+      message: "Profile updated successfully.",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+
+    res.status(500).json({
+      message: "Server Error",
+    });
+  }
+}; 
 
 module.exports = {
   getProfile,
   becomeSeller,
+  updateProfile, // Bunu ekledik
 };

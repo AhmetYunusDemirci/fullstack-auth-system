@@ -26,14 +26,58 @@ export default function NewProductPage() {
   const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
-    setFormData((current) => ({
-      ...current,
-      [e.target.name]: e.target.value,
-    }));
+  const { name, value } = e.target;
 
-    setError("");
-    setSuccess("");
-  };
+  if (name === "price") {
+    // Sadece sayı ve en fazla 2 ondalık basamak
+    if (!/^\d*(\.\d{0,2})?$/.test(value)) {
+      return;
+    }
+
+    // Maksimum fiyat
+    if (value !== "" && Number(value) > 999999.99) {
+      setError("Price cannot be higher than $999,999.99.");
+      return;
+    }
+  }
+
+  if (name === "stock") {
+    // Sadece tam sayı
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
+    // Maksimum stok
+    if (value !== "" && Number(value) > 999999) {
+      setError("Stock quantity cannot be higher than 999,999.");
+      return;
+    }
+  }
+
+  if (name === "category") {
+    // Maksimum 30 karakter
+    if (value.length > 30) {
+      setError("Category cannot be longer than 30 characters.");
+      return;
+    }
+
+    // Sadece kategori için uygun karakterler
+    if (!/^[a-zA-Z0-9ğüşıöçĞÜŞİÖÇ&\-\s]*$/.test(value)) {
+      setError(
+        "Category can only contain letters, numbers, spaces, & and -."
+      );
+      return;
+    }
+  }
+
+  setFormData((current) => ({
+    ...current,
+    [name]: value,
+  }));
+
+  setError("");
+  setSuccess("");
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -68,6 +112,28 @@ export default function NewProductPage() {
       setError("Stock cannot be negative.");
       return;
     }
+    if (Number(formData.price) > 999999.99) {
+  setError("Price cannot be higher than $999,999.99.");
+  return;
+}
+
+if (
+  !Number.isInteger(Number(formData.stock)) ||
+  Number(formData.stock) > 999999
+) {
+  setError("Stock must be a whole number between 0 and 999,999.");
+  return;
+}
+
+if (formData.category.trim().length > 30) {
+  setError("Category cannot be longer than 30 characters.");
+  return;
+}
+
+if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
+  setError("Category must contain at least one letter.");
+  return;
+}
 
     try {
       setLoading(true);
@@ -299,15 +365,16 @@ export default function NewProductPage() {
                       </span>
 
                       <Input
-                        type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="pl-9"
-                      />
+  type="number"
+  name="price"
+  value={formData.price}
+  onChange={handleChange}
+  min="0"
+  max="999999.99"
+  step="0.01"
+  placeholder="0.00"
+  className="pl-9"
+/>
 
                     </div>
 
@@ -323,13 +390,15 @@ export default function NewProductPage() {
                     </label>
 
                     <Input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleChange}
-                      min="0"
-                      placeholder="0"
-                    />
+  type="number"
+  name="stock"
+  value={formData.stock}
+  onChange={handleChange}
+  min="0"
+  max="999999"
+  step="1"
+  placeholder="0"
+/>
 
                     <p className="mt-2 text-xs text-gray-400">
                       Number of items currently available.
@@ -346,12 +415,13 @@ export default function NewProductPage() {
                   </label>
 
                   <Input
-                    type="text"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    placeholder="e.g. Electronics, Clothing, Home"
-                  />
+  type="text"
+  name="category"
+  value={formData.category}
+  onChange={handleChange}
+  maxLength={30}
+  placeholder="e.g. Electronics, Clothing, Home"
+/>
 
                   <p className="mt-2 text-xs text-gray-400">
                     Choose a simple category that best describes your product.

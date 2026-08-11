@@ -19,6 +19,7 @@ export default function ProductDetailPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
   const [cartError, setCartError] = useState("");
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -430,20 +431,6 @@ export default function ProductDetailPage() {
 
             </div>
 
-            {/* DESCRIPTION */}
-
-            <div className="mt-8">
-
-              <h2 className="text-lg font-bold text-slate-900">
-                About this product
-              </h2>
-
-              <p className="text-slate-600 leading-7 mt-3">
-                {product.description ||
-                  "No description is available for this product."}
-              </p>
-
-            </div>
 
             {/* DIVIDER */}
 
@@ -687,22 +674,47 @@ export default function ProductDetailPage() {
 
         {/* DESCRIPTION SECTION */}
 
-        <div className="mt-12 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 lg:p-10">
+<div className="mt-12 bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 lg:p-10">
 
-          <h2 className="text-2xl font-bold text-slate-900">
-            Product Description
-          </h2>
+  <h2 className="text-2xl font-bold text-slate-900">
+    Product Description
+  </h2>
 
-          <div className="mt-5 border-t border-slate-100 pt-5">
+  <div className="mt-5 border-t border-slate-100 pt-5">
 
-            <p className="text-slate-600 leading-8 max-w-4xl">
-              {product.description ||
-                "No description is available for this product."}
-            </p>
+    <p
+      className={`text-slate-600 leading-8 max-w-4xl ${
+        !showFullDescription
+          ? "line-clamp-3"
+          : ""
+      }`}
+    >
+      {product.description ||
+        "No description is available for this product."}
+    </p>
 
-          </div>
+    {product.description &&
+      product.description.length > 180 && (
 
-        </div>
+        <button
+          type="button"
+          onClick={() =>
+            setShowFullDescription(
+              (current) => !current
+            )
+          }
+          className="mt-4 text-blue-600 font-semibold hover:text-blue-700 transition"
+        >
+          {showFullDescription
+            ? "Show less"
+            : "Read more"}
+        </button>
+
+      )}
+
+  </div>
+
+</div>
 
       </section>
 

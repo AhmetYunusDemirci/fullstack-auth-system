@@ -1,5 +1,3 @@
-# fullstack-auth-system
-
 
 ```
 fullstack-auth-system
@@ -23,6 +21,8 @@ fullstack-auth-system
 │     │  └─ isSeller.js
 │     ├─ models
 │     │  ├─ Cart.js
+│     │  ├─ ContactMessage.js
+│     │  ├─ Order.js
 │     │  ├─ Product.js
 │     │  └─ User.js
 │     ├─ server.js
@@ -34,6 +34,8 @@ fullstack-auth-system
 │  │  ├─ admin
 │  │  │  └─ page.js
 │  │  ├─ cart
+│  │  │  └─ page.js
+│  │  ├─ contact
 │  │  │  └─ page.js
 │  │  ├─ dashboard
 │  │  │  └─ page.js
@@ -56,6 +58,9 @@ fullstack-auth-system
 │  │  │     └─ page.js
 │  │  └─ seller
 │  │     └─ products
+│  │        ├─ edit
+│  │        │  └─ [id]
+│  │        │     └─ page.js
 │  │        ├─ new
 │  │        │  └─ page.js
 │  │        └─ page.js

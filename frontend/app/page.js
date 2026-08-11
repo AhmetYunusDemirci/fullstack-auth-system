@@ -1,26 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import API_URL from "../lib/api";
 import Navbar from "../components/Navbar";
 
 export default function HomePage() {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const loadProducts = async () => {
+  // Kategorileri tutacağımız state
+  const [categories, setCategories] = useState(["All"]);
+
+  // 1. Sadece ilk açılışta tüm kategorileri getiren fonksiyon
+  const loadCategories = async () => {
+    try {
+      const response = await fetch(`${API_URL}/products`);
+      if (response.ok) {
+        const data = await response.json();
+        const uniqueCategories = [
+          "All",
+          ...new Set(data.products.map((p) => p.category).filter(Boolean)),
+        ];
+        setCategories(uniqueCategories);
+      }
+    } catch (err) {
+      console.error("Kategoriler yüklenemedi", err);
+    }
+  };
+
+  // 2. Arama ve Kategori parametreleriyle ürünleri getiren fonksiyon
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
 
-      const response = await fetch(`${API_URL}/products`);
+      const queryParams = new URLSearchParams();
+      if (search) queryParams.append("search", search);
+      if (category && category !== "All") queryParams.append("category", category);
+
+      const response = await fetch(`${API_URL}/products?${queryParams.toString()}`);
       const data = await response.json();
 
       if (!response.ok) {
@@ -29,47 +52,27 @@ export default function HomePage() {
       }
 
       setProducts(data.products || []);
-      setFilteredProducts(data.products || []);
     } catch (error) {
       console.error(error);
       setError("Unable to connect to the server.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, category]);
 
+  // Sayfa yüklendiğinde kategorileri çek
   useEffect(() => {
-    loadProducts();
+    loadCategories();
   }, []);
 
+  // Arama veya kategori değiştiğinde ürünleri yeniden çek (Debounce ile)
   useEffect(() => {
-    const searchValue = search.toLowerCase().trim();
+    const delayDebounceFn = setTimeout(() => {
+      loadProducts();
+    }, 300); // Kullanıcı yazarken her harfte istek atmasın diye 300ms bekletiyoruz
 
-    const filtered = products.filter((product) => {
-      const matchesSearch =
-        !searchValue ||
-        product.name?.toLowerCase().includes(searchValue) ||
-        product.description?.toLowerCase().includes(searchValue) ||
-        product.category?.toLowerCase().includes(searchValue);
-
-      const matchesCategory =
-        category === "All" ||
-        product.category?.toLowerCase() === category.toLowerCase();
-
-      return matchesSearch && matchesCategory;
-    });
-
-    setFilteredProducts(filtered);
-  }, [search, category, products]);
-
-  const categories = [
-    "All",
-    ...new Set(
-      products
-        .map((product) => product.category)
-        .filter(Boolean)
-    ),
-  ];
+    return () => clearTimeout(delayDebounceFn);
+  }, [loadProducts]);
 
   return (
     <main className="min-h-screen bg-[#f7f8fc]">
@@ -291,7 +294,7 @@ export default function HomePage() {
           {!loading && !error && (
             <div className="text-sm text-gray-500">
               <span className="font-semibold text-gray-900">
-                {filteredProducts.length}
+                {products.length}
               </span>{" "}
               products found
             </div>
@@ -352,32 +355,6 @@ export default function HomePage() {
             </select>
 
           </div>
-
-          {/* CATEGORY CHIPS */}
-
-          {categories.length > 1 && (
-
-            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-
-              {categories.map((item) => (
-
-                <button
-                  key={item}
-                  onClick={() => setCategory(item)}
-                  className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition ${
-                    category === item
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {item}
-                </button>
-
-              ))}
-
-            </div>
-
-          )}
 
         </div>
 
@@ -450,8 +427,7 @@ export default function HomePage() {
         {/* EMPTY */}
 
         {!loading &&
-          !error &&
-          filteredProducts.length === 0 && (
+          !error && products.length === 0 && (
 
             <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-14 text-center">
 
@@ -484,12 +460,11 @@ export default function HomePage() {
         {/* PRODUCT GRID */}
 
         {!loading &&
-          !error &&
-          filteredProducts.length > 0 && (
+          !error && products.length > 0 && (
 
             <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
 
-              {filteredProducts.map((product) => (
+              {products.map((product) => (
 
                 <Link
                   href={`/products/${product._id}`}

@@ -14,6 +14,24 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // CHECKOUT MODAL STATES
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [addressForm, setAddressForm] = useState({
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "",
+  });
+
+  const [cardForm, setCardForm] = useState({
+    cardHolderName: "",
+    cardNumber: "",
+    expireMonth: "",
+    expireYear: "",
+    cvc: "",
+  });
+
   // --------------------------------
   // LOAD CART
   // --------------------------------
@@ -126,6 +144,103 @@ export default function CartPage() {
     } catch (error) {
       console.error(error);
       alert("Server Error");
+    }
+  };
+  // --------------------------------
+  // CHECKOUT (SİPARİŞ VER)
+  // --------------------------------
+
+   const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Şehir ve Ülke için sadece harf ve boşluk (Türkçe karakterler dahil)
+    if (name === "city" || name === "country") {
+      const regex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]*$/;
+      if (!regex.test(value) || value.length > 50) return;
+    }
+    
+    // Posta kodu için sadece rakam ve maksimum 5 hane
+    if (name === "postalCode") {
+      const regex = /^[0-9]*$/;
+      if (!regex.test(value) || value.length > 5) return;
+    }
+
+    // Adres için maksimum karakter sınırı
+    if (name === "address" && value.length > 200) return;
+
+    setAddressForm({ ...addressForm, [name]: value });
+  };
+
+  const handleCardChange = (e) => {
+    const { name, value } = e.target;
+
+    // Kart Üzerindeki İsim: Sadece harf kabul et ve otomatik BÜYÜK HARFE çevir
+    if (name === "cardHolderName") {
+      const regex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]*$/;
+      if (!regex.test(value) || value.length > 50) return;
+      setCardForm({ ...cardForm, [name]: value.toUpperCase() });
+      return;
+    }
+
+    // Kart Numarası: Sadece rakam kabul et ve yazarken otomatik 4'erli boşluk bırak
+    if (name === "cardNumber") {
+      let rawValue = value.replace(/\D/g, ""); // Rakam olmayan her şeyi sil
+      if (rawValue.length > 16) rawValue = rawValue.slice(0, 16); // Max 16 rakam
+      // 4 rakamda bir boşluk ekle
+      const formattedValue = rawValue.replace(/(\d{4})/g, "$1 ").trim();
+      setCardForm({ ...cardForm, [name]: formattedValue });
+      return;
+    }
+
+    // Ay: Sadece rakam, Max 2 hane
+    if (name === "expireMonth") {
+      if (!/^[0-9]*$/.test(value) || value.length > 2) return;
+    }
+    
+    // Yıl: Sadece rakam, Max 4 hane
+    if (name === "expireYear") {
+      if (!/^[0-9]*$/.test(value) || value.length > 4) return;
+    }
+    
+    // CVC: Sadece rakam, Max 3 hane
+    if (name === "cvc") {
+      if (!/^[0-9]*$/.test(value) || value.length > 3) return;
+    }
+
+    setCardForm({ ...cardForm, [name]: value });
+  };
+
+  const handleCheckout = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+
+    try {
+      setCheckoutLoading(true);
+      
+      const response = await fetch(`${API_URL}/payments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        // Hem adres hem kart bilgilerini backend'e yolluyoruz
+        body: JSON.stringify({ addressForm, cardForm }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || "Checkout failed.");
+        return;
+      }
+
+      alert("Checkout successful.");
+      router.push("/my-orders");
+
+    } catch (error) {
+      console.error(error);
+      alert("Server Error");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -621,9 +736,10 @@ export default function CartPage() {
 
                   <Button
                     disabled={items.length === 0}
+                    onClick={() => setShowCheckout(true)}
                     variant="accent"
                     size="lg"
-                    className="mt-7"
+                    className="mt-7 w-full"
                   >
                     Proceed to Checkout
                   </Button>
@@ -688,9 +804,91 @@ export default function CartPage() {
           </div>
         )}
 
-      </section>
+     </section>
+
+      {/* CHECKOUT MODAL */}
+      {showCheckout && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-8 shadow-2xl">
+            
+            <div className="mb-6 flex items-center justify-between sticky top-0 bg-white z-10 pb-2 border-b border-gray-100">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Secure Checkout</h2>
+                <p className="text-sm text-gray-500 mt-1">Shipping & Payment Details</p>
+              </div>
+              <button
+                onClick={() => setShowCheckout(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition hover:bg-gray-200 hover:text-gray-900"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCheckout} className="space-y-6">
+              
+              {/* ADRES BİLGİLERİ */}
+              <div className="space-y-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2"><span className="text-blue-500">📍</span> Shipping Address</h3>
+                <div>
+                  <input type="text" name="address" required value={addressForm.address} onChange={handleAddressChange} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900 text-sm" placeholder="Full Address (e.g., 123 Main St, Apt 4B)" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <input type="text" name="city" required value={addressForm.city} onChange={handleAddressChange} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900 text-sm" placeholder="City" />
+                  <input type="text" name="postalCode" inputMode="numeric" required value={addressForm.postalCode} onChange={handleAddressChange} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900 text-sm" placeholder="Postal Code" />
+                </div>
+                <div>
+                  <input type="text" name="country" required value={addressForm.country} onChange={handleAddressChange} className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition text-gray-900 text-sm" placeholder="Country" />
+                </div>
+              </div>
+
+              {/* KREDİ KARTI BİLGİLERİ (IYZICO) */}
+              <div className="space-y-4 bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2"><span className="text-emerald-500">💳</span> Payment Information</h3>
+                
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Name on Card</label>
+                  <input type="text" name="cardHolderName" required value={cardForm.cardHolderName} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm tracking-wide uppercase" placeholder="JOHN DOE" />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 ml-1">Card Number</label>
+                  <input type="text" name="cardNumber" maxLength="19" required value={cardForm.cardNumber} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm font-mono tracking-widest" placeholder="4543 0000 0000 0000" />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 ml-1">Month</label>
+                    <input type="text" name="expireMonth" inputMode="numeric" required value={cardForm.expireMonth} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm text-center font-mono" placeholder="MM" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 ml-1">Year</label>
+                    <input type="text" name="expireYear" inputMode="numeric" required value={cardForm.expireYear} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm text-center font-mono" placeholder="YYYY" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 ml-1">CVC</label>
+                    <input type="text" name="cvc" inputMode="numeric" required value={cardForm.cvc} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm text-center font-mono" placeholder="123" />
+                  </div>
+                </div> 
+                
+              </div>
+
+              <div className="mt-8 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setShowCheckout(false)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={checkoutLoading} variant="accent" className="flex-1 disabled:opacity-70 bg-emerald-600 hover:bg-emerald-700 border-emerald-600 shadow-emerald-600/20">
+                  {checkoutLoading ? "Processing Payment..." : `Pay $${totalPrice.toFixed(2)}`}
+                </Button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </main>
   );
 }
+        
+  
 

@@ -1,9 +1,31 @@
 const Product = require("../models/Product");
 
 // TÜM ÜRÜNLERİ GETİR
+// TÜM ÜRÜNLERİ GETİR (SERVER-SIDE ARAMA DESTEKLİ)
 const getProducts = async (req, res) => {
   try {
-    const products = await Product.find()
+    const { search, category } = req.query;
+    
+    // Temel sorgu objesi (Eğer filtre yoksa tüm ürünleri getirir)
+    let query = {};
+
+    // 1. Kategori Filtresi
+    if (category && category !== "All") {
+      // Büyük/küçük harf duyarlılığını kaldırmak için regex
+      query.category = { $regex: new RegExp(`^${category}$`, "i") };
+    }
+
+    // 2. Arama Kelimesi Filtresi (Name, Description, Category)
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+        { category: searchRegex }
+      ];
+    }
+
+    const products = await Product.find(query)
       .populate("seller", "name surname email")
       .sort({ createdAt: -1 });
 

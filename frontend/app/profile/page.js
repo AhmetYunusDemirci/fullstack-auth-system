@@ -13,6 +13,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [becomingSeller, setBecomingSeller] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [formData, setFormData] = useState({ name: "", surname: "", email: "", password: "" });
 
   const loadProfile = async () => {
     const token = localStorage.getItem("token");
@@ -46,6 +49,12 @@ export default function ProfilePage() {
       }
 
       setUser(data.user);
+      setFormData({
+        name: data.user.name || "",
+        surname: data.user.surname || "",
+        email: data.user.email || "",
+        password: "",
+      });
     } catch (error) {
       console.error(error);
       setError("Server Error");
@@ -57,6 +66,40 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
   }, []);
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) return router.push("/login");
+
+    try {
+      setUpdateLoading(true);
+      const response = await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Profile could not be updated.");
+        return;
+      }
+
+      setUser(data.user); // Ekranda yeni bilgileri göster
+      setIsEditing(false); // Formu kapat
+      setFormData(prev => ({ ...prev, password: "" })); // Şifre alanını temizle
+      alert("Profile updated successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Server Error");
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
 
    
 const handleBecomeSeller = async () => {
@@ -288,21 +331,29 @@ const handleBecomeSeller = async () => {
 
           <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
 
-            <div className="p-6 sm:p-7 border-b border-slate-100">
-
+            <div className="p-6 sm:p-7 border-b border-slate-100 flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">
                   Account Information
                 </h2>
-
                 <p className="text-sm text-slate-500 mt-1">
                   Your personal account details
                 </p>
               </div>
-
+              
+              {!isEditing ? (
+                <button onClick={() => setIsEditing(true)} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-xl text-sm font-semibold transition">
+                  Edit Profile
+                </button>
+              ) : (
+                <button onClick={() => { setIsEditing(false); setFormData({ ...formData, password: "" }); }} className="bg-slate-100 text-slate-600 hover:bg-slate-200 px-4 py-2 rounded-xl text-sm font-semibold transition">
+                  Cancel
+                </button>
+              )}
             </div>
 
-            <div className="p-6 sm:p-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {!isEditing ? (
+              <div className="p-6 sm:p-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               {/* NAME */}
 
@@ -415,6 +466,38 @@ const handleBecomeSeller = async () => {
               </div>
 
             </div>
+            ) : (
+              <form onSubmit={handleUpdateProfile} className="p-6 sm:p-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
+                
+                {/* FORM BİLGİLERİ */}
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">First Name</label>
+                  <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                </div>
+                
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Last Name</label>
+                  <input type="text" required value={formData.surname} onChange={(e) => setFormData({...formData, surname: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Email Address</label>
+                  <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">New Password <span className="text-slate-400 normal-case font-normal">(Optional)</span></label>
+                  <input type="password" placeholder="Leave blank to keep current password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900 placeholder:text-slate-400" />
+                </div>
+
+                <div className="sm:col-span-2 flex justify-end mt-2">
+                  <button type="submit" disabled={updateLoading} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-70">
+                    {updateLoading ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+                
+              </form>
+            )}
 
           </div>
 

@@ -1,5 +1,8 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const Product = require("../models/Product");
+const Order = require("../models/Order");
+const ContactMessage = require("../models/ContactMessage");
 
 // TÜM KULLANICILARI GETİR
 const getUsers = async (req, res) => {
@@ -46,30 +49,29 @@ const getUsers = async (req, res) => {
   }
 };
 
-// İSTATİSTİKLER
+// İSTATİSTİKLER (GÜNCELLENDİ)
 const getStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-
-    const totalAdmins = await User.countDocuments({
-      role: "admin",
-    });
-
-    const totalNormalUsers = await User.countDocuments({
-      role: "user",
-    });
+    const totalAdmins = await User.countDocuments({ role: "admin" });
+    const totalNormalUsers = await User.countDocuments({ role: "user" });
+    
+    // Yeni İstatistikler
+    const totalProducts = await Product.countDocuments();
+    const totalOrders = await Order.countDocuments();
+    const totalOpenTickets = await ContactMessage.countDocuments({ status: "Open" });
 
     res.status(200).json({
       totalUsers,
       totalAdmins,
       totalNormalUsers,
+      totalProducts,
+      totalOrders,
+      totalOpenTickets
     });
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -334,7 +336,115 @@ const updateUserRole = async (req, res) => {
     });
   }
 };
+// -----------------------------------------
+// E-TİCARET YÖNETİM FONKSİYONLARI (YENİ)
+// -----------------------------------------
 
+// TÜM ÜRÜNLERİ GETİR
+const getAdminProducts = async (req, res) => {
+  try {
+    const products = await Product.find().populate("seller", "name email").sort({ createdAt: -1 });
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// ÜRÜN SİL
+const deleteAdminProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found." });
+    
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Product deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// TÜM SİPARİŞLERİ GETİR
+const getAdminOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate("user", "name email").sort({ createdAt: -1 });
+    res.status(200).json({ orders });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// SİPARİŞ DURUMUNU GÜNCELLE
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findById(req.params.id);
+    
+    if (!order) return res.status(404).json({ message: "Order not found." });
+    
+    order.status = status;
+    await order.save();
+    
+    res.status(200).json({ message: "Order status updated.", order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// TÜM DESTEK TALEPLERİNİ GETİR
+const getAdminMessages = async (req, res) => {
+  try {
+    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    res.status(200).json({ messages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// TALEBİN DURUMUNU GÜNCELLE
+const updateMessageStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const message = await ContactMessage.findById(req.params.id);
+    
+    if (!message) return res.status(404).json({ message: "Message not found." });
+    
+    message.status = status;
+    await message.save();
+    
+    res.status(200).json({ message: "Message status updated.", contactMessage: message });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// ÜRÜN GÜNCELLE (ADMİN - Herhangi bir ürünü güncelleyebilir)
+const updateAdminProduct = async (req, res) => {
+  try {
+    const { name, price, stock, category } = req.body;
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found." });
+    }
+
+    product.name = name ?? product.name;
+    product.price = price ?? product.price;
+    product.stock = stock ?? product.stock;
+    product.category = category ?? product.category;
+
+    await product.save();
+
+    res.status(200).json({ message: "Product updated successfully.", product });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 module.exports = {
   getUsers,
   getStats,
@@ -343,4 +453,12 @@ module.exports = {
   deleteUser,
   updateUser,
   updateUserRole,
+  // Yeni eklenenler:
+  getAdminProducts,
+  deleteAdminProduct,
+  updateAdminProduct,
+  getAdminOrders,
+  updateOrderStatus,
+  getAdminMessages,
+  updateMessageStatus,
 };
