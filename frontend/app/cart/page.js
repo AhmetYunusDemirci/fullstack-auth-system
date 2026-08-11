@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import API_URL from "../../lib/api";
 import Navbar from "../../components/Navbar";
 import Button from "../../components/Button";
+import { toast } from "react-hot-toast";
 
 export default function CartPage() {
   const router = useRouter();
@@ -176,10 +177,10 @@ const [couponCodeInput, setCouponCodeInput] = useState("");
     setAddressForm({ ...addressForm, [name]: value });
   };
 
-  const handleCardChange = (e) => {
+const handleCardChange = (e) => {
     const { name, value } = e.target;
 
-    // Kart Üzerindeki İsim: Sadece harf kabul et ve otomatik BÜYÜK HARFE çevir
+    // Kart Üzerindeki İsim: Sadece harf kabul et ve BÜYÜK HARFE çevir
     if (name === "cardHolderName") {
       const regex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]*$/;
       if (!regex.test(value) || value.length > 50) return;
@@ -187,22 +188,26 @@ const [couponCodeInput, setCouponCodeInput] = useState("");
       return;
     }
 
-    // Kart Numarası: Sadece rakam kabul et ve yazarken otomatik 4'erli boşluk bırak
+    // Kart Numarası: Sadece rakam kabul et ve 4'erli boşluk bırak
     if (name === "cardNumber") {
-      let rawValue = value.replace(/\D/g, ""); // Rakam olmayan her şeyi sil
-      if (rawValue.length > 16) rawValue = rawValue.slice(0, 16); // Max 16 rakam
-      // 4 rakamda bir boşluk ekle
+      let rawValue = value.replace(/\D/g, "");
+      if (rawValue.length > 16) rawValue = rawValue.slice(0, 16);
       const formattedValue = rawValue.replace(/(\d{4})/g, "$1 ").trim();
       setCardForm({ ...cardForm, [name]: formattedValue });
       return;
     }
 
-    // Ay: Sadece rakam, Max 2 hane
+    // AY (Month): Sadece 01 - 12 arası giriş yapılabilir
     if (name === "expireMonth") {
       if (!/^[0-9]*$/.test(value) || value.length > 2) return;
+      
+      // Kullanıcı 13, 15 gibi aylar veya 00 yazmaya çalışırsa engelle
+      if (value.length === 2 && (parseInt(value, 10) > 12 || parseInt(value, 10) === 0)) {
+        return; 
+      }
     }
     
-    // Yıl: Sadece rakam, Max 4 hane
+    // YIL (Year): Sadece rakam, Max 4 hane
     if (name === "expireYear") {
       if (!/^[0-9]*$/.test(value) || value.length > 4) return;
     }
@@ -250,6 +255,31 @@ const [couponCodeInput, setCouponCodeInput] = useState("");
   };
   const handleCheckout = async (e) => {
     e.preventDefault();
+     // --- YENİ: KART TARİH VE EKSİK VERİ KONTROLLERİ ---
+    // 1. CVC 3 haneden kısa olamaz
+    if (cardForm.cvc.length < 3) {
+      toast.error("CVC kodu 3 haneli olmalıdır!");
+      return;
+    }
+    
+    // 2. Yıl ve Ay eksik veya formata uymuyorsa
+    if (cardForm.expireYear.length < 4 || cardForm.expireMonth.length < 2) {
+      toast.error("Lütfen Ay ve Yıl bilgilerini tam giriniz (Örn: 12 / 2030)");
+      return;
+    }
+
+    // 3. Son kullanma tarihi geçmiş mi kontrolü
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1; // getMonth() 0-11 arası döner, +1 ekliyoruz
+    const expYear = parseInt(cardForm.expireYear, 10);
+    const expMonth = parseInt(cardForm.expireMonth, 10);
+
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+      toast.error("Kartınızın son kullanma tarihi geçmiş!");
+      return;
+    }
+    // ---------------------------------------------------
+
     const token = localStorage.getItem("token");
 
     try {

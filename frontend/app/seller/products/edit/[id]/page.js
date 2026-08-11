@@ -566,6 +566,7 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                   <Input
                     type="number"
                     name="price"
+                    max="999999.99"
                     value={formData.price}
                     onChange={handleChange}
                     min="0"
@@ -586,6 +587,7 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                     type="number"
                     name="stock"
                     value={formData.stock}
+                    max="999999"
                     onChange={handleChange}
                     min="0"
                     placeholder="0"
@@ -607,6 +609,7 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                 <Input
                   type="text"
                   name="category"
+                  maxLength={40}
                   value={formData.category}
                   onChange={handleChange}
                   placeholder="Example: Electronics"

@@ -91,6 +91,20 @@ const createProduct = async (req, res) => {
       });
     }
 
+    // --- YENİ: UZUNLUK VE GÜVENLİK KONTROLLERİ (API SEVİYESİ) ---
+    if (name.length > 100) {
+      return res.status(400).json({
+        message: "Product name cannot exceed 100 characters.",
+      });
+    }
+
+    if (description.length > 2000) {
+      return res.status(400).json({
+        message: "Description cannot exceed 2000 characters.",
+      });
+    }
+    // -------------------------------------------------------------
+
     if (Number(price) < 0) {
       return res.status(400).json({
         message: "Price cannot be negative.",
@@ -167,6 +181,22 @@ const updateProduct = async (req, res) => {
       image,
       category,
     } = req.body;
+
+    // --- YENİ: UZUNLUK VE GÜVENLİK KONTROLLERİ (API SEVİYESİ) ---
+    // Eğer name gönderildiyse ve 100 karakterden uzunsa engelle
+    if (name && name.length > 100) {
+      return res.status(400).json({
+        message: "Product name cannot exceed 100 characters.",
+      });
+    }
+
+    // Eğer description gönderildiyse ve 2000 karakterden uzunsa engelle
+    if (description && description.length > 2000) {
+      return res.status(400).json({
+        message: "Description cannot exceed 2000 characters.",
+      });
+    }
+    // -------------------------------------------------------------
 
     product.name = name ?? product.name;
     product.description =
