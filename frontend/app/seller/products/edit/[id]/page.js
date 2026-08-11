@@ -521,6 +521,8 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                 <Input
                   type="text"
                   name="name"
+                  maxLength={100}
+                  required
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Example: iPhone 15 Pro Max"
@@ -540,6 +542,8 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                 <textarea
                   name="description"
                   value={formData.description}
+                  maxLength={2000}
+                  required
                   onChange={handleChange}
                   placeholder="Describe your product..."
                   rows={6}

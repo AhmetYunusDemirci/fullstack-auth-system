@@ -6,6 +6,7 @@ import API_URL from "../../lib/api";
 import Navbar from "../../components/Navbar";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
+import toast from "react-hot-toast"; 
 
 export default function AdminPage() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export default function AdminPage() {
 
     const decodedToken = JSON.parse(atob(token.split(".")[1]));
     if (decodedToken.role !== "admin") {
-      alert("Admin access required.");
+      toast.error("Admin access required.");
       return router.push("/dashboard");
     }
 
@@ -123,7 +124,7 @@ export default function AdminPage() {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/admin/users/${userId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { alert("User deleted successfully."); loadAdminData(); }
+      if (res.ok) { toast.success("User deleted successfully."); loadAdminData(); }
     } catch (error) { console.error(error); }
   };
 
@@ -136,7 +137,7 @@ export default function AdminPage() {
         method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ role: newRole }),
       });
-      if (res.ok) { alert("User role updated successfully."); loadAdminData(); }
+      if (res.ok) { toast.success("User role updated successfully."); loadAdminData(); }
     } catch (error) { console.error(error); }
   };
 
@@ -152,10 +153,10 @@ export default function AdminPage() {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(createForm),
       });
       if (res.ok) {
-        alert("User created successfully."); setShowCreateModal(false);
+        toast.success("User created successfully."); setShowCreateModal(false);
         setCreateForm({ name: "", surname: "", email: "", password: "", role: "user" });
         setPage(1); loadAdminData();
-      } else { alert("Failed to create user."); }
+      } else { toast.error("Failed to create user."); }
     } catch (error) { console.error(error); }
   };
 
@@ -166,7 +167,7 @@ export default function AdminPage() {
       const res = await fetch(`${API_URL}/admin/users/${editingUser._id}`, {
         method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(editForm),
       });
-      if (res.ok) { alert("User updated successfully."); setEditingUser(null); loadAdminData(); }
+      if (res.ok) { toast.success("User updated successfully."); setEditingUser(null); loadAdminData(); }
     } catch (error) { console.error(error); }
   };
 
@@ -195,12 +196,12 @@ export default function AdminPage() {
         body: JSON.stringify(editProductForm),
       });
       if (res.ok) {
-        alert("Product updated successfully.");
+        toast.success("Product updated successfully.");
         setEditingProduct(null);
         loadAdminData();
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to update product.");
+        toast.error(data.message || "Failed to update product.");
       }
     } catch (error) { console.error(error); }
   };
@@ -209,7 +210,7 @@ export default function AdminPage() {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/admin/products/${productId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) { alert("Product deleted."); loadAdminData(); }
+      if (res.ok) { toast.success("Product deleted."); loadAdminData(); }
     } catch (error) { console.error(error); }
   };
 
@@ -252,13 +253,13 @@ export default function AdminPage() {
         body: JSON.stringify(couponForm)
       });
       if (res.ok) {
-        alert("Coupon created successfully!");
+        toast.success("Coupon created successfully!");
         setShowCouponModal(false);
         setCouponForm({ code: "", discountPercentage: "", expiryDays: 30 });
         loadCoupons(); // Listeyi yenile
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to create coupon.");
+        toast.error(data.message || "Failed to create coupon.");
       }
     } catch (err) { console.error(err); }
   };

@@ -1,5 +1,8 @@
 import { Inter } from "next/font/google";
+import { Toaster } from "react-hot-toast"; 
 import "./globals.css";
+
+
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,9 +15,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="tr">
-      <body className={inter.className}>
+    <html lang="en">
+      <body>
         {children}
+        {/* Bildirimlerin çıkacağı konumu belirliyoruz */}
+        <Toaster position="bottom-right" reverseOrder={false} />
       </body>
     </html>
   );

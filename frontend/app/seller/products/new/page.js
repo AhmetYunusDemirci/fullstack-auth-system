@@ -312,6 +312,8 @@ if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
                   <Input
                     type="text"
                     name="name"
+                    maxLength={40} 
+                    required
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="e.g. iPhone 15 Pro Max"
@@ -338,6 +340,8 @@ if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
                   <textarea
                     name="description"
                     value={formData.description}
+                    maxLength={2000}
+                    required
                     onChange={handleChange}
                     placeholder="Tell customers about the product, its features, condition and specifications..."
                     rows={7}
@@ -511,7 +515,7 @@ if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
               </div>
 
               {/* IMAGE PREVIEW */}
-              <div className="aspect-square overflow-hidden bg-gray-100">
+              <div className="mt-4 p-2 w-full max-w-sm rounded-2xl border border-gray-200 bg-gray-50 shadow-sm transition-all"> 
 
                 {formData.image ? (
                   <img
