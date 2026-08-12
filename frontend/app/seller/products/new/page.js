@@ -423,7 +423,7 @@ if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
   name="category"
   value={formData.category}
   onChange={handleChange}
-  maxLength={30}
+  maxLength={25}
   placeholder="e.g. Electronics, Clothing, Home"
 />
 

@@ -75,12 +75,15 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Alan kontrolü
     if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required.",
-      });
+      return res.status(400).json({ message: "Please provide email and password" });
     }
+
+    // --- YENİ: NOSQL INJECTION & VERİ TİPİ KORUMASI ---
+    if (typeof email !== "string" || typeof password !== "string") {
+      return res.status(400).json({ message: "Invalid input format. Strings only." });
+    }
+    // --------------------------------------------------
 
     // Kullanıcıyı bul
     const user = await User.findOne({ email });

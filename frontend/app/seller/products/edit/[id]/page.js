@@ -609,7 +609,7 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                 <Input
                   type="text"
                   name="category"
-                  maxLength={40}
+                  maxLength={25}
                   value={formData.category}
                   onChange={handleChange}
                   placeholder="Example: Electronics"

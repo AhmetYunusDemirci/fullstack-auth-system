@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import API_URL from "../../lib/api";
 import Navbar from "../../components/Navbar";
+import toast from "react-hot-toast"; 
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -13,6 +15,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [becomingSeller, setBecomingSeller] = useState(false);
+  const [showSellerModal, setShowSellerModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", surname: "", email: "", password: "" });
@@ -85,17 +88,17 @@ export default function ProfilePage() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Profile could not be updated.");
+        toast.error(data.message || "Profile could not be updated.");
         return;
       }
 
-      setUser(data.user); // Ekranda yeni bilgileri göster
-      setIsEditing(false); // Formu kapat
-      setFormData(prev => ({ ...prev, password: "" })); // Şifre alanını temizle
-      alert("Profile updated successfully!");
+      setUser(data.user);
+      setIsEditing(false);
+      setFormData(prev => ({ ...prev, password: "" }));
+      toast.success("Profile updated successfully!");
     } catch (error) {
       console.error(error);
-      alert("Server Error");
+      toast.error("Server Error");
     } finally {
       setUpdateLoading(false);
     }
@@ -103,59 +106,43 @@ export default function ProfilePage() {
 
    
 const handleBecomeSeller = async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) return router.push("/login");
 
-  if (!token) {
-    router.push("/login");
-    return;
-  }
+    try {
+      setBecomingSeller(true);
+      setShowSellerModal(false); // İşlem başlarken modalı kapat
 
-  const confirmed = window.confirm(
-    "Do you want to become a seller?"
-  );
-
-  if (!confirmed) {
-    return;
-  }
-
-  try {
-    setBecomingSeller(true);
-
-    const response = await fetch(
-      `${API_URL}/users/become-seller`,
-      {
+      const response = await fetch(`${API_URL}/users/become-seller`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
+        return;
       }
-    );
 
-    const data = await response.json();
+      if (!response.ok) {
+        toast.error(data.message || "Could not become seller.");
+        return;
+      }
 
-    if (response.status === 401) {
-      localStorage.removeItem("token");
-      router.push("/login");
-      return;
+      setUser(data.user);
+      toast.success("Congratulations! You are now a seller. 🛍️");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Server Error");
+    } finally {
+      setBecomingSeller(false);
     }
+  };
 
-    if (!response.ok) {
-      alert(data.message || "Could not become seller.");
-      return;
-    }
-
-    // Backend'in döndürdüğü güncel kullanıcı bilgisini kullan
-    setUser(data.user);
-
-    alert("You are now a seller.");
-
-  } catch (error) {
-    console.error(error);
-    alert("Server Error");
-  } finally {
-    setBecomingSeller(false);
-  }
-};
+  
 
 
 
@@ -591,7 +578,7 @@ const handleBecomeSeller = async () => {
                   </p>
 
                   <button
-                    onClick={handleBecomeSeller}
+                    onClick={() => setShowSellerModal(true)}
                     disabled={becomingSeller}
                     className="w-full mt-5 bg-white text-blue-700 py-3 rounded-xl font-bold hover:bg-blue-50 transition disabled:opacity-60"
                   >
@@ -670,17 +657,46 @@ const handleBecomeSeller = async () => {
 
         </div>
 
-        {/* FOOTER NOTE */}
-
+       {/* FOOTER NOTE */}
         <div className="text-center mt-10 pb-4">
-
           <p className="text-sm text-slate-400">
             Your account is protected by MyStore security.
           </p>
-
         </div>
 
       </section>
+
+      {/* BECOME SELLER CONFIRMATION MODAL */}
+      {showSellerModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-opacity">
+          <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl text-center">
+            
+            <div className="w-20 h-20 mx-auto bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-5">
+              🛍️
+            </div>
+            
+            <h2 className="text-2xl font-bold text-slate-900">Become a Seller?</h2>
+            <p className="text-slate-500 mt-3 leading-relaxed">
+              Are you sure you want to upgrade your account to a seller profile? This will allow you to add products and manage a store.
+            </p>
+
+            <div className="mt-8 flex gap-3">
+              <button 
+                onClick={() => setShowSellerModal(false)}
+                className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl hover:bg-slate-200 transition"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBecomeSeller}
+                className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition"
+              >
+                Yes, Upgrade!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </main>
   );

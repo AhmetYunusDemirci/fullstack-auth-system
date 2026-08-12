@@ -3,6 +3,7 @@ require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
 
+
 const connectDB = require("./config/db");
 
 const dashboardRoutes = require("./routes/dashboardRoutes");
@@ -24,6 +25,7 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(express.json());
+
 
 // Routes
 app.use("/api/dashboard", dashboardRoutes);
