@@ -71,6 +71,35 @@ export default function ProfilePage() {
   }, []);
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+
+    // --- FRONTEND GÜVENLİK VE LİMİT KONTROLLERİ ---
+    if (formData.name.trim().length > 50 || formData.surname.trim().length > 50) {
+      toast.error("First name and Last name cannot exceed 50 characters.");
+      return;
+    }
+    
+    if (formData.email.trim().length > 100) {
+      toast.error("Email cannot exceed 100 characters.");
+      return;
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    if (formData.password && formData.password.length < 6) {
+      toast.error("New password must be at least 6 characters.");
+      return;
+    }
+    
+    if (formData.password && formData.password.length > 30) {
+      toast.error("New password cannot exceed 30 characters.");
+      return;
+    }
+    // ---------------------------------------------
+
     const token = localStorage.getItem("token");
     if (!token) return router.push("/login");
 
@@ -453,28 +482,28 @@ const handleBecomeSeller = async () => {
               </div>
 
             </div>
-            ) : (
+          ) : (
               <form onSubmit={handleUpdateProfile} className="p-6 sm:p-7 grid grid-cols-1 sm:grid-cols-2 gap-5">
                 
                 {/* FORM BİLGİLERİ */}
                 <div>
                   <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">First Name</label>
-                  <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                  <input type="text" required maxLength={35} value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
                 </div>
                 
                 <div>
                   <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Last Name</label>
-                  <input type="text" required value={formData.surname} onChange={(e) => setFormData({...formData, surname: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                  <input type="text" required maxLength={35} value={formData.surname} onChange={(e) => setFormData({...formData, surname: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Email Address</label>
-                  <input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
+                  <input type="email" required maxLength={70} value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900" />
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="text-xs uppercase tracking-wide text-slate-500 font-semibold">New Password <span className="text-slate-400 normal-case font-normal">(Optional)</span></label>
-                  <input type="password" placeholder="Leave blank to keep current password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900 placeholder:text-slate-400" />
+                  <input type="password" minLength={6} maxLength={30} placeholder="Leave blank to keep current password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white transition text-slate-900 placeholder:text-slate-400" />
                 </div>
 
                 <div className="sm:col-span-2 flex justify-end mt-2">

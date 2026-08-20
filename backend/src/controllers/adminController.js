@@ -49,17 +49,73 @@ const getUsers = async (req, res) => {
   }
 };
 
-// İSTATİSTİKLER (GÜNCELLENDİ)
+// GELİŞMİŞ İSTATİSTİKLER (Dashboard Grafikleri İçin)
 const getStats = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalAdmins = await User.countDocuments({ role: "admin" });
     const totalNormalUsers = await User.countDocuments({ role: "user" });
     
-    // Yeni İstatistikler
     const totalProducts = await Product.countDocuments();
     const totalOrders = await Order.countDocuments();
     const totalOpenTickets = await ContactMessage.countDocuments({ status: "Open" });
+
+    // --- YENİ: GRAFİKLER İÇİN SİPARİŞ DURUMLARI (ORDER STATUS) ---
+    // Hangi siparişten kaç tane var? (Pending, Shipped, Delivered vb.)
+    const orderStatusDistribution = await Order.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: {
+          name: "$_id",
+          value: "$count",
+          _id: 0
+        }
+      }
+    ]);
+
+    // --- YENİ: GRAFİKLER İÇİN AYLIK GELİR (REVENUE) ---
+    // Son 6 ayın gelirlerini (Sadece Delivered olanlardan) hesapla
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1); // 6 ay öncenin 1. gününe git
+
+    const monthlyRevenue = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sixMonthsAgo },
+          status: "Delivered" // Sadece teslim edilen, kesinleşmiş paralar
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          revenue: { $sum: "$totalPrice" }
+        }
+      },
+      {
+        $sort: { "_id.year": 1, "_id.month": 1 }
+      }
+    ]);
+
+    // Ay isimlerini (Oca, Şub, Mar vb.) frontend için hazırlama
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const formattedRevenue = monthlyRevenue.map(item => ({
+      name: `${monthNames[item._id.month - 1]}`,
+      revenue: item.revenue
+    }));
+
+    // Eğer veritabanında henüz teslim edilmiş sipariş yoksa, grafiğin boş kalmaması için dummy (sahte) veri gönder
+    const finalRevenueData = formattedRevenue.length > 0 ? formattedRevenue : [
+      { name: "Jan", revenue: 0 }, { name: "Feb", revenue: 0 }, { name: "Mar", revenue: 0 }
+    ];
 
     res.status(200).json({
       totalUsers,
@@ -67,7 +123,9 @@ const getStats = async (req, res) => {
       totalNormalUsers,
       totalProducts,
       totalOrders,
-      totalOpenTickets
+      totalOpenTickets,
+      orderStatusDistribution, // Pasta Grafik için
+      monthlyRevenue: finalRevenueData // Çizgi Grafik için
     });
   } catch (error) {
     console.error(error);
@@ -78,51 +136,37 @@ const getStats = async (req, res) => {
 // KULLANICI OLUŞTUR
 const createUser = async (req, res) => {
   try {
-    const {
-      name,
-      surname,
-      email,
-      password,
-      role,
-    } = req.body;
+    const { name, surname, email, password, role } = req.body;
 
     if (!name || !surname || !email || !password) {
-      return res.status(400).json({
-        message: "All fields are required.",
-      });
+      return res.status(400).json({ message: "All fields are required." });
     }
+
+    // --- YENİ: UZUNLUK VE GÜVENLİK SINIRLAMALARI ---
+    if (name.length > 50 || surname.length > 50) {
+      return res.status(400).json({ message: "Name and surname cannot exceed 50 characters." });
+    }
+    
+    if (email.length > 100) {
+      return res.status(400).json({ message: "Email cannot exceed 100 characters." });
+    }
+    // -----------------------------------------------
 
     if (password.length < 6) {
-      return res.status(400).json({
-        message:
-          "Password must be at least 6 characters.",
-      });
+      return res.status(400).json({ message: "Password must be at least 6 characters." });
     }
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        message:
-          "Please enter a valid email address.",
-      });
+      return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
-    const existingUser = await User.findOne({
-      email,
-    });
-
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        message: "Email already exists.",
-      });
+      return res.status(400).json({ message: "Email already exists." });
     }
 
-    const hashedPassword = await bcrypt.hash(
-      password,
-      10
-    );
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       name,
@@ -147,10 +191,7 @@ const createUser = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
  
@@ -217,36 +258,30 @@ const deleteUser = async (req, res) => {
 // KULLANICI GÜNCELLE
 const updateUser = async (req, res) => {
   try {
-    const {
-      name,
-      surname,
-      email,
-    } = req.body;
+    const { name, surname, email } = req.body;
 
     if (!name || !surname || !email) {
-      return res.status(400).json({
-        message: "Name, surname and email are required.",
-      });
+      return res.status(400).json({ message: "Name, surname and email are required." });
     }
 
-    const emailRegex =
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // --- YENİ: UZUNLUK VE GÜVENLİK SINIRLAMALARI ---
+    if (name.length > 50 || surname.length > 50) {
+      return res.status(400).json({ message: "Name and surname cannot exceed 50 characters." });
+    }
+    
+    if (email.length > 100) {
+      return res.status(400).json({ message: "Email cannot exceed 100 characters." });
+    }
+    // -----------------------------------------------
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        message:
-          "Please enter a valid email address.",
-      });
+      return res.status(400).json({ message: "Please enter a valid email address." });
     }
 
-    const user = await User.findById(
-      req.params.id
-    );
-
+    const user = await User.findById(req.params.id);
     if (!user) {
-      return res.status(404).json({
-        message: "User not found.",
-      });
+      return res.status(404).json({ message: "User not found." });
     }
 
     const emailOwner = await User.findOne({
@@ -255,9 +290,7 @@ const updateUser = async (req, res) => {
     });
 
     if (emailOwner) {
-      return res.status(400).json({
-        message: "Email already exists.",
-      });
+      return res.status(400).json({ message: "Email already exists." });
     }
 
     user.name = name;
@@ -279,10 +312,7 @@ const updateUser = async (req, res) => {
 
   } catch (error) {
     console.error(error);
-
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   }
 };
 
@@ -291,7 +321,8 @@ const updateUserRole = async (req, res) => {
   try {
     const { role } = req.body;
 
-    if (!["user", "admin"].includes(role)) {
+    // --- YENİ: "seller" rolü de geçerli roller arasına eklendi ---
+    if (!["user", "seller", "admin"].includes(role)) {
       return res.status(400).json({
         message: "Invalid role.",
       });
@@ -426,6 +457,32 @@ const updateMessageStatus = async (req, res) => {
 const updateAdminProduct = async (req, res) => {
   try {
     const { name, price, stock, category } = req.body;
+    
+    // --- YENİ: UZUNLUK VE MANTIKSAL SINIRLAMALAR ---
+    if (name && name.length > 50) {
+      return res.status(400).json({ message: "Product name cannot exceed 50 characters." });
+    }
+    
+    if (category && category.length > 40) {
+      return res.status(400).json({ message: "Category cannot exceed 40 characters." });
+    }
+
+    if (price !== undefined) {
+      const numPrice = Number(price);
+      if (numPrice < 0 || numPrice > 1000000) {
+        return res.status(400).json({ message: "Price must be between 0 and 1,000,000." });
+      }
+    }
+
+    if (stock !== undefined) {
+      const numStock = Number(stock);
+      // Stok negatif olamaz ve 100 binden fazla (mantıksız stok) olamaz
+      if (numStock < 0 || numStock > 100000) {
+        return res.status(400).json({ message: "Stock must be between 0 and 100,000." });
+      }
+    }
+    // -----------------------------------------------
+
     const product = await Product.findById(req.params.id);
 
     if (!product) {

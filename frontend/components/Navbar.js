@@ -143,24 +143,42 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* SELLER KISMI EN SAĞA ALINDI VE SARI/AMBER RENGE ÇEVRİLDİ */}
+            {/* SELLER DROPDOWN MENÜSÜ */}
             {user?.role === "seller" && (
-              <div className="ml-4 flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 p-1 pl-4 shadow-sm">
-                <span className="mr-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-amber-600">
-                  <span className="text-sm">🛍️</span> Seller
-                </span>
-                <Link
-                  href="/seller/products"
-                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
-                >
-                  My Products
-                </Link>
-                <Link
-                  href="/seller/orders"
-                  className="rounded-full px-3 py-1.5 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
-                >
-                  Orders
-                </Link>
+              <div className="group relative ml-2">
+                
+                {/* Dropdown Tetikleyici (Buton) */}
+                <button className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-700 transition hover:bg-amber-100">
+                  <span className="text-base">🛍️</span> Seller Center
+                  {/* Aşağı Ok İkonu (Hover olunca döner) */}
+                  <svg className="h-4 w-4 text-amber-600 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown İçeriği (Açılan Kutu) */}
+                <div className="invisible absolute right-0 top-full z-50 pt-3 opacity-0 translate-y-2 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="w-48 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl shadow-amber-900/5">
+                    
+                    <Link
+                      href="/seller/products"
+                      className="block px-5 py-3.5 text-sm font-medium text-gray-700 transition hover:bg-amber-50 hover:text-amber-800"
+                    >
+                      📦 My Products
+                    </Link>
+                    
+                    <div className="h-px w-full bg-gray-50"></div>
+                    
+                    <Link
+                      href="/seller/orders"
+                      className="block px-5 py-3.5 text-sm font-medium text-gray-700 transition hover:bg-amber-50 hover:text-amber-800"
+                    >
+                      📋 Orders
+                    </Link>
+
+                  </div>
+                </div>
+
               </div>
             )}
 

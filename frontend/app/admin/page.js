@@ -7,6 +7,10 @@ import Navbar from "../../components/Navbar";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import toast from "react-hot-toast"; 
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend
+} from 'recharts';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -128,17 +132,32 @@ export default function AdminPage() {
     } catch (error) { console.error(error); }
   };
 
-  const handleRoleChange = async (userId, currentRole) => {
-    const newRole = currentRole === "admin" ? "user" : "admin";
-    if (!window.confirm(`Change user role to ${newRole}?`)) return;
+  const handleRoleChange = async (userId, newRole) => {
+    if (!window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+      loadAdminData(); // İptal edilirse Select kutusunu eski haline getir
+      return;
+    }
+    
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/admin/users/${userId}/role`, {
-        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        method: "PATCH", 
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ role: newRole }),
       });
-      if (res.ok) { toast.success("User role updated successfully."); loadAdminData(); }
-    } catch (error) { console.error(error); }
+      
+      if (res.ok) { 
+        toast.success(`User role updated to ${newRole}.`); 
+        loadAdminData(); 
+      } else {
+        const data = await res.json();
+        toast.error(data.message || "Failed to update role.");
+        loadAdminData();
+      }
+    } catch (error) { 
+      console.error(error); 
+      toast.error("Server connection error.");
+    }
   };
 
   const openEditModal = (user) => { setEditingUser(user); setEditForm({ name: user.name, surname: user.surname, email: user.email }); };
@@ -152,12 +171,22 @@ export default function AdminPage() {
       const res = await fetch(`${API_URL}/admin/users`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(createForm),
       });
+      
+      const data = await res.json(); // Backend'den gelen cevabı kesinlikle oku
+
       if (res.ok) {
-        toast.success("User created successfully."); setShowCreateModal(false);
+        toast.success("User created successfully."); 
+        setShowCreateModal(false);
         setCreateForm({ name: "", surname: "", email: "", password: "", role: "user" });
-        setPage(1); loadAdminData();
-      } else { toast.error("Failed to create user."); }
-    } catch (error) { console.error(error); }
+        setPage(1); 
+        loadAdminData();
+      } else { 
+        toast.error(data.message || "Failed to create user."); // Backend hatasını ekrana bas
+      }
+    } catch (error) { 
+      console.error(error); 
+      toast.error("Server connection error.");
+    }
   };
 
   const handleUpdateUser = async (e) => {
@@ -167,8 +196,20 @@ export default function AdminPage() {
       const res = await fetch(`${API_URL}/admin/users/${editingUser._id}`, {
         method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(editForm),
       });
-      if (res.ok) { toast.success("User updated successfully."); setEditingUser(null); loadAdminData(); }
-    } catch (error) { console.error(error); }
+
+      const data = await res.json(); // Backend'den gelen cevabı oku
+
+      if (res.ok) { 
+        toast.success("User updated successfully."); 
+        setEditingUser(null); 
+        loadAdminData(); 
+      } else {
+        toast.error(data.message || "Failed to update user."); // Backend hatasını ekrana bas
+      }
+    } catch (error) { 
+      console.error(error); 
+      toast.error("Server connection error.");
+    }
   };
 
   // --- E-COMMERCE ACTIONS (NEW) ---
@@ -218,20 +259,52 @@ export default function AdminPage() {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/admin/orders/${orderId}/status`, {
-        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: newStatus }),
+        method: "PATCH", 
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, 
+        body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) loadAdminData();
-    } catch (error) { console.error(error); }
+
+      if (res.ok) {
+        toast.success("Order status updated.");
+        // TÜM SAYFAYI YENİLEMEK YERİNE SADECE İLGİLİ SİPARİŞİ STATE İÇİNDE GÜNCELLE
+        setAdminOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order._id === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      } else {
+        toast.error("Failed to update order status.");
+      }
+    } catch (error) { 
+      console.error(error); 
+      toast.error("Server connection error.");
+    }
   };
 
   const handleUpdateMessageStatus = async (messageId, newStatus) => {
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`${API_URL}/admin/messages/${messageId}/status`, {
-        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ status: newStatus }),
+        method: "PATCH", 
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, 
+        body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) loadAdminData();
-    } catch (error) { console.error(error); }
+
+      if (res.ok) {
+        toast.success("Message status updated.");
+        // TÜM SAYFAYI YENİLEMEK YERİNE SADECE İLGİLİ MESAJI STATE İÇİNDE GÜNCELLE
+        setAdminMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === messageId ? { ...msg, status: newStatus } : msg
+          )
+        );
+      } else {
+        toast.error("Failed to update message status.");
+      }
+    } catch (error) { 
+      console.error(error);
+      toast.error("Server connection error.");
+    }
   };
 
   const loadCoupons = async () => {
@@ -336,15 +409,84 @@ export default function AdminPage() {
 
         {/* TAB 1: DASHBOARD */}
         {activeTab === "dashboard" && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {/* Mevcut 3 Kart */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2></div>
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Admins</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalAdmins || 0}</h2></div>
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Normal Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalNormalUsers || 0}</h2></div>
-            {/* Yeni 3 Kart */}
-            <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-blue-600">Total Products</p><h2 className="mt-4 text-4xl font-bold text-blue-900">{stats?.totalProducts || 0}</h2></div>
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-emerald-600">Total Orders</p><h2 className="mt-4 text-4xl font-bold text-emerald-900">{stats?.totalOrders || 0}</h2></div>
-            <div className="rounded-2xl border border-orange-100 bg-orange-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-orange-600">Open Tickets</p><h2 className="mt-4 text-4xl font-bold text-orange-900">{stats?.totalOpenTickets || 0}</h2></div>
+          <div className="space-y-6">
+            
+            {/* STAT KARTLARI */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2></div>
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Admins</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalAdmins || 0}</h2></div>
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Normal Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalNormalUsers || 0}</h2></div>
+              
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-blue-600">Total Products</p><h2 className="mt-4 text-4xl font-bold text-blue-900">{stats?.totalProducts || 0}</h2></div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-emerald-600">Total Orders</p><h2 className="mt-4 text-4xl font-bold text-emerald-900">{stats?.totalOrders || 0}</h2></div>
+              <div className="rounded-2xl border border-orange-100 bg-orange-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-orange-600">Open Tickets</p><h2 className="mt-4 text-4xl font-bold text-orange-900">{stats?.totalOpenTickets || 0}</h2></div>
+            </div>
+
+            {/* GRAFİKLER */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              
+              {/* GELİR GRAFİĞİ (LINE CHART) */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue Trend (Last 6 Months)</h3>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={stats?.monthlyRevenue || []}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} tickFormatter={(value) => `$${value}`} />
+                      <RechartsTooltip 
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value) => [`$${value}`, "Revenue"]}
+                      />
+                      <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} dot={{r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* SİPARİŞ DURUMLARI GRAFİĞİ (PIE CHART) */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-6">Order Status Distribution</h3>
+                <div className="h-72 w-full">
+                  {stats?.orderStatusDistribution && stats.orderStatusDistribution.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.orderStatusDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {stats.orderStatusDistribution.map((entry, index) => {
+                            // Durumlara göre renk belirleme
+                            const colors = {
+                              'Delivered': '#10b981', // Emerald
+                              'Processing': '#3b82f6', // Blue
+                              'Pending': '#f59e0b', // Amber
+                              'Shipped': '#8b5cf6', // Violet
+                              'Cancelled': '#ef4444' // Red
+                            };
+                            return <Cell key={`cell-${index}`} fill={colors[entry.name] || '#94a3b8'} />;
+                          })}
+                        </Pie>
+                        <RechartsTooltip 
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748b' }}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                      No order data available to display.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
         )}
 
@@ -379,7 +521,15 @@ export default function AdminPage() {
                           <div className="flex items-center justify-end gap-2">
                             <button onClick={() => handleViewUser(user._id)} className="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold transition hover:bg-gray-200">View</button>
                             <button onClick={() => openEditModal(user)} className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100">Edit</button>
-                            <button onClick={() => handleRoleChange(user._id, user.role)} className="rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 transition hover:bg-purple-100">Role</button>
+                            <select
+  value={user.role}
+  onChange={(e) => handleRoleChange(user._id, e.target.value)}
+  className="rounded-lg bg-purple-50 border border-purple-100 text-purple-700 px-2 py-1 text-xs font-semibold outline-none cursor-pointer hover:bg-purple-100 transition"
+>
+  <option value="user">User</option>
+  <option value="seller">Seller</option>
+  <option value="admin">Admin</option>
+</select>
                             <button onClick={() => handleDelete(user._id)} className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100">Delete</button>
                           </div>
                         </td>
@@ -530,8 +680,11 @@ export default function AdminPage() {
                 <h3 className="text-lg font-bold text-gray-900">Discount Coupons</h3>
                 <p className="text-sm text-gray-500">Manage promotional codes and discounts.</p>
               </div>
-              <Button onClick={() => setShowCouponModal(true)} className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600">
-                <span className="text-lg">+</span> Create Coupon
+              <Button 
+                onClick={() => setShowCouponModal(true)} 
+                className="!w-auto !py-2.5 px-5 text-sm shadow-sm flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 border-emerald-600"
+              >
+                <span className="text-base font-medium">+</span> Create Coupon
               </Button>
             </div>
             
@@ -589,13 +742,24 @@ export default function AdminPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm transition-opacity">
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
             <div className="mb-6 flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">Add New User</h2><button onClick={() => setShowCreateModal(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">✕</button></div>
-            <form onSubmit={handleCreateUser} className="space-y-4">
-              <Input type="text" name="name" placeholder="First Name" value={createForm.name} onChange={handleCreateChange} required />
-              <Input type="text" name="surname" placeholder="Last Name" value={createForm.surname} onChange={handleCreateChange} required />
-              <Input type="email" name="email" placeholder="Email Address" value={createForm.email} onChange={handleCreateChange} required />
-              <Input type="password" name="password" placeholder="Password" value={createForm.password} onChange={handleCreateChange} required />
-              <div className="input-wrapper"><select name="role" value={createForm.role} onChange={handleCreateChange} className="input cursor-pointer appearance-none"><option value="user">User</option><option value="admin">Admin</option></select></div>
-              <div className="mt-6 flex gap-3 pt-2"><Button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">Cancel</Button><Button type="submit" variant="accent" className="flex-1">Create User</Button></div>
+           <form onSubmit={handleCreateUser} className="space-y-4">
+              <Input type="text" name="name" placeholder="First Name" value={createForm.name} onChange={handleCreateChange} required maxLength={50} />
+              <Input type="text" name="surname" placeholder="Last Name" value={createForm.surname} onChange={handleCreateChange} required maxLength={50} />
+              <Input type="email" name="email" placeholder="Email Address" value={createForm.email} onChange={handleCreateChange} required maxLength={100} />
+              <Input type="password" name="password" placeholder="Password (Min 6 chars)" value={createForm.password} onChange={handleCreateChange} required minLength={6} maxLength={30} />
+              
+              <div className="input-wrapper">
+                <select name="role" value={createForm.role} onChange={handleCreateChange} className="input cursor-pointer appearance-none">
+                  <option value="user">User</option>
+                  <option value="seller">Seller</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              <div className="mt-6 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">Cancel</Button>
+                <Button type="submit" variant="accent" className="flex-1">Create User</Button>
+              </div>
             </form>
           </div>
         </div>
@@ -606,10 +770,14 @@ export default function AdminPage() {
           <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
             <div className="mb-6 flex items-center justify-between"><h2 className="text-2xl font-bold text-gray-900">Edit User</h2><button onClick={() => setEditingUser(null)} className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200">✕</button></div>
             <form onSubmit={handleUpdateUser} className="space-y-4">
-              <Input type="text" name="name" placeholder="First Name" value={editForm.name} onChange={handleEditChange} required />
-              <Input type="text" name="surname" placeholder="Last Name" value={editForm.surname} onChange={handleEditChange} required />
-              <Input type="email" name="email" placeholder="Email Address" value={editForm.email} onChange={handleEditChange} required />
-              <div className="mt-6 flex gap-3 pt-2"><Button type="button" onClick={() => setEditingUser(null)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">Cancel</Button><Button type="submit" className="flex-1">Save Changes</Button></div>
+              <Input type="text" name="name" placeholder="First Name" value={editForm.name} onChange={handleEditChange} required maxLength={35} />
+              <Input type="text" name="surname" placeholder="Last Name" value={editForm.surname} onChange={handleEditChange} required maxLength={25} />
+              <Input type="email" name="email" placeholder="Email Address" value={editForm.email} onChange={handleEditChange} required maxLength={70} />
+              
+              <div className="mt-6 flex gap-3 pt-2">
+                <Button type="button" onClick={() => setEditingUser(null)} className="flex-1 !bg-gray-100 !text-gray-700 hover:!bg-gray-200">Cancel</Button>
+                <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">Save Changes</Button>
+              </div>
             </form>
           </div>
         </div>

@@ -241,7 +241,7 @@ export default function SellerProductsPage() {
                   </p>
 
                   <p className="mt-2 text-3xl font-extrabold text-gray-900">
-                    {totalStock}
+                    {totalStock > 99999 ? "100,000+" : totalStock.toLocaleString()}
                   </p>
                 </div>
 

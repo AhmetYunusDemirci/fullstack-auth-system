@@ -8,6 +8,8 @@ import Navbar from "../../../../../components/Navbar";
 import Input from "../../../../../components/Input";
 import Button from "../../../../../components/Button";
 
+import toast from "react-hot-toast";
+
 export default function EditProductPage() {
 const params = useParams();
 const router = useRouter();
@@ -114,40 +116,39 @@ setFormData((current) => ({
 
 const handleSubmit = async (e) => {
 e.preventDefault();
-
-
 setError("");
-setSuccess("");
+  setSuccess("");
 
-const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
-if (!token) {
-  router.push("/login");
-  return;
-}
+  if (!token) {
+    router.push("/login");
+    return;
+  }
 
-// Required fields
-if (
-  !formData.name.trim() ||
-  !formData.description.trim() ||
-  formData.price === "" ||
-  formData.stock === "" ||
-  !formData.category.trim()
-) {
-  setError("Please fill in all required fields.");
-  return;
-}
+  // --- FRONTEND GÜVENLİK VE LİMİT KONTROLLERİ ---
+  if (!formData.name.trim() || !formData.description.trim() || formData.price === "" || formData.stock === "" || !formData.category.trim()) {
+    return toast.error("Please fill in all required fields.");
+  }
 
-if (Number(formData.price) < 0) {
-  setError("Price cannot be negative.");
-  return;
-}
+  if (formData.name.trim().length > 100) return toast.error("Product name cannot exceed 100 characters.");
+  if (formData.description.trim().length > 2000) return toast.error("Description cannot exceed 2000 characters.");
+  if (formData.category.trim().length > 50) return toast.error("Category cannot exceed 50 characters.");
+  
+  if (Number(formData.price) < 0 || Number(formData.price) > 1000000) {
+    return toast.error("Price must be between $0 and $1,000,000.");
+  }
 
-if (Number(formData.stock) < 0) {
-  setError("Stock cannot be negative.");
-  return;
-}
-
+  if (!Number.isInteger(Number(formData.stock)) || Number(formData.stock) < 0 || Number(formData.stock) > 100000) {
+    return toast.error("Stock must be a whole number between 0 and 100,000.");
+  }
+  // --- GÖRSEL KONTROLÜ ---
+  if (formData.image.trim() !== "") {
+    const imageRegex = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i;
+    if (!imageRegex.test(formData.image.trim())) {
+      return toast.error("Please enter a valid image URL (Must end with .jpg, .png, .webp, etc.)");
+    }
+  }
 try {
   setSaving(true);
 
@@ -183,7 +184,8 @@ try {
 
   // Not owner
   if (response.status === 403) {
-    setError(
+
+    toast.error(
       data.message ||
         "You can only edit your own products."
     );
@@ -191,9 +193,8 @@ try {
   }
 
   if (!response.ok) {
-    setError(
-      data.message ||
-        "Product could not be updated."
+    toast.error(
+      data.message || "Product could not be updated."
     );
     return;
   }
@@ -217,7 +218,7 @@ try {
   }, 1200);
 } catch (error) {
   console.error(error);
-  setError("Unable to connect to the server.");
+  toast.error("Unable to connect to the server.");
 } finally {
   setSaving(false);
 }
@@ -521,7 +522,7 @@ return ( <main className="min-h-screen bg-[#f7f8fc]">
                 <Input
                   type="text"
                   name="name"
-                  maxLength={100}
+                  maxLength={50}
                   required
                   value={formData.name}
                   onChange={handleChange}

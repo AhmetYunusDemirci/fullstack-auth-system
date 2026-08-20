@@ -8,6 +8,7 @@ import API_URL from "../../../../lib/api";
 import Navbar from "../../../../components/Navbar";
 import Input from "../../../../components/Input";
 import Button from "../../../../components/Button";
+import toast from "react-hot-toast";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function NewProductPage() {
 
     // Maksimum fiyat
     if (value !== "" && Number(value) > 999999.99) {
-      setError("Price cannot be higher than $999,999.99.");
+      toast.error("Price cannot be higher than $999,999.99.");
       return;
     }
   }
@@ -49,7 +50,7 @@ export default function NewProductPage() {
 
     // Maksimum stok
     if (value !== "" && Number(value) > 999999) {
-      setError("Stock quantity cannot be higher than 999,999.");
+      toast.error("Stock quantity cannot be higher than 999,999.");
       return;
     }
   }
@@ -57,13 +58,13 @@ export default function NewProductPage() {
   if (name === "category") {
     // Maksimum 30 karakter
     if (value.length > 30) {
-      setError("Category cannot be longer than 30 characters.");
+      toast.error("Category cannot be longer than 30 characters.");
       return;
     }
 
     // Sadece kategori için uygun karakterler
     if (!/^[a-zA-Z0-9ğüşıöçĞÜŞİÖÇ&\-\s]*$/.test(value)) {
-      setError(
+      toast.error(
         "Category can only contain letters, numbers, spaces, & and -."
       );
       return;
@@ -75,14 +76,14 @@ export default function NewProductPage() {
     [name]: value,
   }));
 
-  setError("");
+  toast.dismiss();
   setSuccess("");
 };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    setError("");
+    toast.dismiss();
     setSuccess("");
 
     const token = localStorage.getItem("token");
@@ -99,39 +100,47 @@ export default function NewProductPage() {
       !formData.stock ||
       !formData.category.trim()
     ) {
-      setError("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     if (Number(formData.price) < 0) {
-      setError("Price cannot be negative.");
+      toast.error("Price cannot be negative.");
       return;
     }
 
     if (Number(formData.stock) < 0) {
-      setError("Stock cannot be negative.");
+      toast.error("Stock cannot be negative.");
       return;
     }
     if (Number(formData.price) > 999999.99) {
-  setError("Price cannot be higher than $999,999.99.");
-  return;
-}
+      toast.error("Price cannot be higher than $999,999.99.");
+      return;
+    }
 
 if (
   !Number.isInteger(Number(formData.stock)) ||
   Number(formData.stock) > 999999
 ) {
-  setError("Stock must be a whole number between 0 and 999,999.");
+  toast.error("Stock must be a whole number between 0 and 999,999.");
   return;
 }
+// --- GÖRSEL KONTROLÜ ---
+    if (formData.image.trim() !== "") {
+      const imageRegex = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i;
+      if (!imageRegex.test(formData.image.trim())) {
+        return toast.error("Please enter a valid image URL (Must end with .jpg, .png, .webp, etc.)");
+      }
+    }
+   
 
 if (formData.category.trim().length > 30) {
-  setError("Category cannot be longer than 30 characters.");
+  toast.error("Category cannot be longer than 30 characters.");
   return;
 }
 
 if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
-  setError("Category must contain at least one letter.");
+  toast.error("Category must contain at least one letter.");
   return;
 }
 
@@ -163,18 +172,18 @@ if (!/[a-zA-ZğüşıöçĞÜŞİÖÇ]/.test(formData.category)) {
       }
 
       if (!response.ok) {
-        setError(data.message || "Product could not be created.");
+        toast.error(data.message || "Product could not be created.");
         return;
       }
 
-      setSuccess("Your product has been published successfully.");
+      toast.success("Your product has been published successfully.");
 
       setTimeout(() => {
         router.push("/seller/products");
       }, 1200);
     } catch (error) {
       console.error(error);
-      setError("Unable to connect to the server.");
+      toast.error("Unable to connect to the server.");
     } finally {
       setLoading(false);
     }

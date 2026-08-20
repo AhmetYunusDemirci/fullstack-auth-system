@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
 import API_URL from "../../lib/api";
+ 
+import toast from "react-hot-toast";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -19,34 +21,56 @@ export default function ContactPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
-    setStatus("loading");
+
+    // --- FRONTEND GÜVENLİK VE LİMİT KONTROLLERİ ---
+    if (formData.name.trim().length > 50) {
+      toast.error("Name cannot exceed 50 characters.");
+      return;
+    }
+    
+    if (formData.subject.trim().length > 100) {
+      toast.error("Subject cannot exceed 100 characters.");
+      return;
+    }
+    
+    if (formData.message.trim().length > 3000) {
+      toast.error("Message cannot exceed 3000 characters.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    // ---------------------------------------------
 
     try {
+      setLoading(true); // Varsa kendi loading state'ini kullan
+
       const response = await fetch(`${API_URL}/contact`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to send message.");
-      }
+      const data = await response.json();
 
-      setStatus("success");
-      setFormData({ name: "", email: "", subject: "", message: "" });
-      
-      // 5 saniye sonra formu tekrar idle (boş) durumuna al
-      setTimeout(() => setStatus("idle"), 5000);
-      
+      if (response.ok) {
+        toast.success("Your message has been sent successfully!");
+        // Formu temizle
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        // Backend'den gelen spesifik hatayı ekrana bas
+        toast.error(data.message || "Failed to send message.");
+      }
     } catch (error) {
-      console.error("Contact form error:", error);
-      setStatus("error"); // İstersen arayüzde error durumu da tasarlayabilirsin
-      alert("Failed to send your message. Please try again later.");
-      setStatus("idle");
+      console.error("Contact Form Error:", error);
+      toast.error("Server connection error. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -139,6 +163,7 @@ export default function ContactPage() {
                         id="name" 
                         name="name" 
                         required 
+                        maxLength={35} 
                         value={formData.name} 
                         onChange={handleChange}
                         className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition text-slate-900" 
@@ -152,6 +177,7 @@ export default function ContactPage() {
                         id="email" 
                         name="email" 
                         required 
+                        maxLength={70}
                         value={formData.email} 
                         onChange={handleChange}
                         className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition text-slate-900" 
@@ -167,6 +193,7 @@ export default function ContactPage() {
                       id="subject" 
                       name="subject" 
                       required 
+                      maxLength={100}
                       value={formData.subject} 
                       onChange={handleChange}
                       className="w-full mt-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition text-slate-900" 
@@ -180,6 +207,7 @@ export default function ContactPage() {
                       id="message" 
                       name="message" 
                       required 
+                      maxLength={3000}
                       rows="5"
                       value={formData.message} 
                       onChange={handleChange}

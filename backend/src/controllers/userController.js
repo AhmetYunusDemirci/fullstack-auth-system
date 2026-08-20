@@ -82,14 +82,52 @@ const updateProfile = async (req, res) => {
 
     const { name, surname, email, password } = req.body;
 
+    // --- BACKEND API UZUNLUK SINIRLAMALARI ---
+
+    if (name && name.length > 35) {
+      return res.status(400).json({
+        message: "Name cannot exceed 35 characters.",
+      });
+    }
+
+    if (surname && surname.length > 35) {
+      return res.status(400).json({
+        message: "Surname cannot exceed 35 characters.",
+      });
+    }
+
+    if (email && email.length > 70) {
+      return res.status(400).json({
+        message: "Email cannot exceed 70 characters.",
+      });
+    }
+
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({
+          message: "Password must be at least 6 characters.",
+        });
+      }
+
+      if (password.length > 30) {
+        return res.status(400).json({
+          message: "Password cannot exceed 30 characters.",
+        });
+      }
+    }
+
+    // ------------------------------------------
+
     // Email'i güncellemek istiyorsa ve email değişmişse
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
+
       if (emailExists) {
         return res.status(400).json({
           message: "Email is already in use.",
         });
       }
+
       user.email = email;
     }
 
@@ -97,15 +135,10 @@ const updateProfile = async (req, res) => {
     user.name = name || user.name;
     user.surname = surname || user.surname;
 
-    // Şifre güncellemek istiyorsa (En az 6 karakter olmalı)
+    // Şifre güncellemek istiyorsa
     if (password) {
-       if (password.length < 6) {
-         return res.status(400).json({
-           message: "Password must be at least 6 characters.",
-         });
-       }
-       const salt = await bcrypt.genSalt(10);
-       user.password = await bcrypt.hash(password, salt);
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
     }
 
     await user.save();
@@ -130,7 +163,7 @@ const updateProfile = async (req, res) => {
       message: "Server Error",
     });
   }
-}; 
+};
 
 module.exports = {
   getProfile,

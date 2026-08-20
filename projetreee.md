@@ -7,14 +7,20 @@ fullstack-auth-system
 │  ├─ package.json
 │  └─ src
 │     ├─ config
-│     │  └─ db.js
+│     │  ├─ db.js
+│     │  └─ iyzipay.js
 │     ├─ controllers
 │     │  ├─ adminController.js
 │     │  ├─ authController.js
 │     │  ├─ cartController.js
+│     │  ├─ contactController.js
+│     │  ├─ couponController.js
 │     │  ├─ dashboardController.js
+│     │  ├─ orderController.js
+│     │  ├─ paymentController.js
 │     │  ├─ productController.js
-│     │  └─ userController.js
+│     │  ├─ userController.js
+│     │  └─ wishlistController.js
 │     ├─ middleware
 │     │  ├─ authMiddleware.js
 │     │  ├─ isAdmin.js
@@ -22,9 +28,11 @@ fullstack-auth-system
 │     ├─ models
 │     │  ├─ Cart.js
 │     │  ├─ ContactMessage.js
+│     │  ├─ Coupon.js
 │     │  ├─ Order.js
 │     │  ├─ Product.js
-│     │  └─ User.js
+│     │  ├─ User.js
+│     │  └─ Wishlist.js
 │     ├─ server.js
 │     └─ utils
 │        └─ sendEmail.js
@@ -45,6 +53,8 @@ fullstack-auth-system
 │  │  ├─ globals.css
 │  │  ├─ login
 │  │  │  └─ page.js
+│  │  ├─ my-orders
+│  │  │  └─ page.js
 │  │  ├─ page.js
 │  │  ├─ products
 │  │  │  └─ [id]
@@ -56,14 +66,18 @@ fullstack-auth-system
 │  │  ├─ reset-password
 │  │  │  └─ [token]
 │  │  │     └─ page.js
-│  │  └─ seller
-│  │     └─ products
-│  │        ├─ edit
-│  │        │  └─ [id]
-│  │        │     └─ page.js
-│  │        ├─ new
-│  │        │  └─ page.js
-│  │        └─ page.js
+│  │  ├─ seller
+│  │  │  ├─ orders
+│  │  │  │  └─ page.js
+│  │  │  └─ products
+│  │  │     ├─ edit
+│  │  │     │  └─ [id]
+│  │  │     │     └─ page.js
+│  │  │     ├─ new
+│  │  │     │  └─ page.js
+│  │  │     └─ page.js
+│  │  └─ wishlist
+│  │     └─ page.js
 │  ├─ CLAUDE.md
 │  ├─ components
 │  │  ├─ Button.jsx

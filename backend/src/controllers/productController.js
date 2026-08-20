@@ -105,17 +105,41 @@ const createProduct = async (req, res) => {
     }
     // -------------------------------------------------------------
 
-    if (Number(price) < 0) {
+    // --- YENİ: KATEGORİ, FİYAT VE STOK SINIRLAMALARI ---
+    if (category && category.length > 50) {
       return res.status(400).json({
-        message: "Price cannot be negative.",
+        message: "Category cannot exceed 50 characters.",
       });
     }
 
-    if (Number(stock) < 0) {
-      return res.status(400).json({
-        message: "Stock cannot be negative.",
-      });
+    if (price !== undefined) {
+      const numPrice = Number(price);
+      if (numPrice < 0 || numPrice > 1000000) {
+        return res.status(400).json({
+          message: "Price must be between $0 and $1,000,000.",
+        });
+      }
     }
+
+    if (stock !== undefined) {
+      const numStock = Number(stock);
+      if (!Number.isInteger(numStock) || numStock < 0 || numStock > 100000) {
+        return res.status(400).json({
+          message: "Stock must be a whole number between 0 and 100,000.",
+        });
+      }
+    }
+    // --- YENİ: GÖRSEL UZANTISI KONTROLÜ (API) ---
+    if (image && image.trim() !== "") {
+      const imageRegex = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i;
+      if (!imageRegex.test(image.trim())) {
+        return res.status(400).json({
+          message: "Invalid image URL. Must end with a valid image extension (.jpg, .png, .webp, etc.).",
+        });
+      }
+    }
+    
+    // ----------------------------------------------------
 
     const product = new Product({
       name,
@@ -210,17 +234,41 @@ const updateProduct = async (req, res) => {
     product.category =
       category ?? product.category;
 
-    if (Number(product.price) < 0) {
+    // --- YENİ: KATEGORİ, FİYAT VE STOK SINIRLAMALARI ---
+    if (category && category.length > 50) {
       return res.status(400).json({
-        message: "Price cannot be negative.",
+        message: "Category cannot exceed 50 characters.",
       });
     }
 
-    if (Number(product.stock) < 0) {
-      return res.status(400).json({
-        message: "Stock cannot be negative.",
-      });
+    if (price !== undefined) {
+      const numPrice = Number(price);
+      if (numPrice < 0 || numPrice > 1000000) {
+        return res.status(400).json({
+          message: "Price must be between $0 and $1,000,000.",
+        });
+      }
     }
+
+    if (stock !== undefined) {
+      const numStock = Number(stock);
+      if (!Number.isInteger(numStock) || numStock < 0 || numStock > 100000) {
+        return res.status(400).json({
+          message: "Stock must be a whole number between 0 and 100,000.",
+        });
+      }
+    }
+    // --- YENİ: GÖRSEL UZANTISI KONTROLÜ (API) ---
+    if (image && image.trim() !== "") {
+      const imageRegex = /^https?:\/\/.+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i;
+      if (!imageRegex.test(image.trim())) {
+        return res.status(400).json({
+          message: "Invalid image URL. Must end with a valid image extension (.jpg, .png, .webp, etc.).",
+        });
+      }
+    }
+    
+    // ----------------------------------------------------
 
     await product.save();
 
