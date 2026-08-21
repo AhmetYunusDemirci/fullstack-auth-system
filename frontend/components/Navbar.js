@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import API_URL from "../lib/api";
+import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
 export default function Navbar() {
   const router = useRouter();
@@ -55,6 +57,35 @@ export default function Navbar() {
   useEffect(() => {
     loadUser();
   }, []);
+  // --- YENİ: CANLI BİLDİRİM (SOCKET.IO) DİNLEYİCİSİ ---
+  useEffect(() => {
+    // Sadece giriş yapmış satıcılar için soketi dinle
+    if (user && user.role === "seller") {
+      // API_URL genelde "http://localhost:5000/api" şeklindedir, soket ise ana domainde çalışır.
+      const socketUrl = API_URL.replace("/api", ""); 
+      const socket = io(socketUrl);
+
+      // Sadece BU satıcının ID'sine özel açılan kanalı dinliyoruz
+      socket.on(`seller_notification_${user.id}`, (data) => {
+        // Ekrana 6 saniye kalacak, alkış ikonlu şık bir bildirim bas!
+        toast.success(data.message, {
+          duration: 6000,
+          icon: '💰',
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        });
+      });
+
+      // Bileşen ekrandan kalktığında bağlantıyı temizle
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [user]);
+  // ----------------------------------------------------
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -141,7 +172,9 @@ export default function Navbar() {
                 </svg>
                 Admin Panel
               </Link>
+            
             )}
+           
 
             {/* SELLER DROPDOWN MENÜSÜ */}
             {user?.role === "seller" && (
@@ -174,6 +207,14 @@ export default function Navbar() {
                       className="block px-5 py-3.5 text-sm font-medium text-gray-700 transition hover:bg-amber-50 hover:text-amber-800"
                     >
                       📋 Orders
+                    </Link>
+                    <div className="h-px w-full bg-gray-50"></div>
+                    
+                    <Link
+                      href="/seller/reviews"
+                      className="block px-5 py-3.5 text-sm font-medium text-gray-700 transition hover:bg-amber-50 hover:text-amber-800"
+                    >
+                      ⭐ Customer Reviews
                     </Link>
 
                   </div>
@@ -297,6 +338,14 @@ export default function Navbar() {
                       className="rounded-xl px-3 py-2.5 font-medium text-amber-900 hover:bg-amber-100 transition"
                     >
                       Order Management
+                    </Link>
+
+                    <Link
+                      href="/seller/reviews"
+                      onClick={() => setMobileOpen(false)}
+                      className="rounded-xl px-3 py-2.5 font-medium text-amber-900 hover:bg-amber-100 transition"
+                    >
+                      Customer Reviews
                     </Link>
                   </div>
                 </div>

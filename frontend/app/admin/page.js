@@ -7,6 +7,7 @@ import Navbar from "../../components/Navbar";
 import Input from "../../components/Input";
 import Button from "../../components/Button";
 import toast from "react-hot-toast"; 
+import { io } from "socket.io-client";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -25,12 +26,14 @@ export default function AdminPage() {
   const [adminProducts, setAdminProducts] = useState([]);
   const [adminOrders, setAdminOrders] = useState([]);
   const [adminMessages, setAdminMessages] = useState([]);
+  
 
   // PAGINATION & SEARCH (Users için)
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [liveUsers, setLiveUsers] = useState(1);
   const limit = 5;
 
   const [loading, setLoading] = useState(true);
@@ -105,7 +108,20 @@ export default function AdminPage() {
     loadAdminData();
     loadCoupons();
   }, [page]);
-  
+  // --- CANLI ZİYARETÇİ DİNLEYİCİSİ ---
+  useEffect(() => {
+    const socketUrl = API_URL.replace("/api", ""); 
+    const socket = io(socketUrl);
+
+    // Backend'den 'live_users_update' verisi geldikçe state'i güncelle
+    socket.on("live_users_update", (count) => {
+      setLiveUsers(count);
+    });
+
+    // Admin sayfadan çıkarsa dinlemeyi durdur
+    return () => socket.disconnect();
+  }, []);
+  // -----------------------------------
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -392,10 +408,16 @@ export default function AdminPage() {
 
         {/* TABS MENU */}
 <div className="mb-8 flex overflow-x-auto border-b border-gray-200 gap-4 pb-4">
-  {["dashboard", "users", "products", "orders", "tickets", "coupons"].map((tab) => (
+  {["dashboard", "users", "products", "orders", "tickets", "coupons", "reviews"].map((tab) => (
     <button
       key={tab}
-      onClick={() => setActiveTab(tab)}
+      onClick={() => {
+        if (tab === "reviews") {
+          router.push("/admin/reviews");
+        } else {
+          setActiveTab(tab);
+        }
+      }}
       className={`px-6 py-3 text-sm font-semibold uppercase tracking-wider transition-all whitespace-nowrap border-2 rounded-lg ${
         activeTab === tab 
           ? "border-blue-600 bg-blue-50 text-blue-600 shadow-sm" 
@@ -416,6 +438,25 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2></div>
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Admins</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalAdmins || 0}</h2></div>
               <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Normal Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalNormalUsers || 0}</h2></div>
+              {/* --- YENİ: LIVE ACTIVE USERS KARTI --- */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 relative overflow-hidden transition hover:shadow-md">
+          {/* Yanıp sönen yeşil nokta (Live Indicator) */}
+          <div className="absolute top-5 right-5">
+             <span className="flex h-3 w-3 relative">
+               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+             </span>
+          </div>
+          
+          <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-2xl">
+            🌍
+          </div>
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Online Right Now</p>
+            <p className="text-3xl font-extrabold text-slate-900 mt-1">{liveUsers}</p>
+          </div>
+        </div>
+        {/* --------------------------------------- */}
               
               <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-blue-600">Total Products</p><h2 className="mt-4 text-4xl font-bold text-blue-900">{stats?.totalProducts || 0}</h2></div>
               <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-emerald-600">Total Orders</p><h2 className="mt-4 text-4xl font-bold text-emerald-900">{stats?.totalOrders || 0}</h2></div>

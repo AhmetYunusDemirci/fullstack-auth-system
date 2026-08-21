@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const cors = require("cors");
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 
 
 const connectDB = require("./config/db");
@@ -45,8 +47,42 @@ app.get("/", (req, res) => {
   res.send("Server is running...");
 });
 
-const PORT = process.env.PORT || 5000;
+// Eski app.listen(...) kodunu sil, yerine bunu yapıştır:
 
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// Socket.io Ayarları (CORS izni veriyoruz ki Frontend bağlanabilsin)
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Frontend URL'ini buraya yazabilirsin, şimdilik herkese açık
+    methods: ["GET", "POST"]
+  }
+});
+
+// io objesini diğer dosyalardan (controller'lardan) erişilebilir yapıyoruz!
+app.set("io", io);
+
+// --- CANLI ZİYARETÇİ SAYACI ---
+let activeUsersCount = 0;
+
+io.on("connection", (socket) => {
+  activeUsersCount++; // Biri siteye girdiğinde sayıyı 1 artır
+  console.log("🟢 Biri bağlandı. Aktif Kullanıcı:", activeUsersCount);
+  
+  // Tüm kullanıcılara (Admin paneline) güncel sayıyı canlı canlı fırlat
+  io.emit("live_users_update", activeUsersCount);
+
+  socket.on("disconnect", () => {
+    activeUsersCount--; // Biri siteden çıktığında sayıyı 1 azalt
+    console.log("🔴 Biri çıktı. Aktif Kullanıcı:", activeUsersCount);
+    
+    // Çıkış olduğunda da güncel sayıyı yayınla
+    io.emit("live_users_update", activeUsersCount);
+  });
+});
+// -----------------------------
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

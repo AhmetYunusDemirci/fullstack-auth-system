@@ -12,6 +12,21 @@ export default function HomePage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  // --- YENİ FİLTRE STATE'LERİ ---
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [inStock, setInStock] = useState(false);
+  const [sort, setSort] = useState("newest");
+
+  // Filtreleri sıfırlama fonksiyonu
+  const resetFilters = () => {
+    setSearch("");
+    setCategory("All");
+    setMinPrice("");
+    setMaxPrice("");
+    setInStock(false);
+    setSort("newest");
+  };
 
   // Kategorileri tutacağımız state
   const [categories, setCategories] = useState(["All"]);
@@ -33,7 +48,7 @@ export default function HomePage() {
     }
   };
 
-  // 2. Arama ve Kategori parametreleriyle ürünleri getiren fonksiyon
+ // 2. Arama ve Kategori parametreleriyle ürünleri getiren fonksiyon
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -42,6 +57,13 @@ export default function HomePage() {
       const queryParams = new URLSearchParams();
       if (search) queryParams.append("search", search);
       if (category && category !== "All") queryParams.append("category", category);
+      
+      // --- YENİ FİLTRE PARAMETRELERİ ---
+      if (minPrice) queryParams.append("minPrice", minPrice);
+      if (maxPrice) queryParams.append("maxPrice", maxPrice);
+      if (inStock) queryParams.append("inStock", "true");
+      if (sort) queryParams.append("sort", sort);
+      // ---------------------------------
 
       const response = await fetch(`${API_URL}/products?${queryParams.toString()}`);
       const data = await response.json();
@@ -58,22 +80,20 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
-
-  // Sayfa yüklendiğinde kategorileri çek
+  }, [search, category, minPrice, maxPrice, inStock, sort]); // Bağımlılıklar (Dependencies) güncellendi
+// 1. Sayfa yüklendiğinde kategorileri çek
   useEffect(() => {
     loadCategories();
   }, []);
 
-  // Arama veya kategori değiştiğinde ürünleri yeniden çek (Debounce ile)
+  // 2. Filtreler değiştiğinde ürünleri yeniden çek (Debounce ile)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       loadProducts();
-    }, 300); // Kullanıcı yazarken her harfte istek atmasın diye 300ms bekletiyoruz
+    }, 300); // Kullanıcı yazarken her harfte API'yi yormamak için 300ms bekler
 
     return () => clearTimeout(delayDebounceFn);
   }, [loadProducts]);
-
   return (
     <main className="min-h-screen bg-[#f7f8fc]">
 
@@ -304,30 +324,18 @@ export default function HomePage() {
 
         {/* FILTERS */}
 
-        <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-
+        <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all">
+          
+          {/* ÜST SATIR: ARAMA VE KATEGORİ */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-
-            {/* SEARCH */}
-
+            
             <div className="relative flex-1">
-
               <div className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="7" />
                   <path d="m20 20-3.5-3.5" />
                 </svg>
-
               </div>
-
               <input
                 type="text"
                 value={search}
@@ -335,27 +343,84 @@ export default function HomePage() {
                 placeholder="Search products..."
                 className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-12 pr-4 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
               />
-
             </div>
-
-            {/* CATEGORY */}
 
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="h-12 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm font-medium text-gray-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 lg:w-52"
             >
-
               {categories.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
+                <option key={item} value={item}>{item}</option>
               ))}
-
             </select>
 
           </div>
 
+          {/* ALT SATIR: GELİŞMİŞ FİLTRELER */}
+          <div className="mt-4 flex flex-col flex-wrap gap-4 border-t border-gray-100 pt-4 md:flex-row md:items-center md:justify-between">
+            
+            {/* SOL KISIM: Fiyat ve Stok */}
+            <div className="flex flex-wrap items-center gap-5">
+              
+              {/* Fiyat Aralığı */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-500">Price:</span>
+                <input
+                  type="number"
+                  placeholder="Min $"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="h-9 w-20 rounded-lg border border-gray-200 bg-gray-50 px-2 text-sm outline-none transition focus:border-blue-500 focus:bg-white"
+                />
+                <span className="text-gray-400">-</span>
+                <input
+                  type="number"
+                  placeholder="Max $"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="h-9 w-20 rounded-lg border border-gray-200 bg-gray-50 px-2 text-sm outline-none transition focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="hidden h-5 w-px bg-gray-200 md:block"></div>
+
+              {/* Stok Durumu */}
+              <label className="flex cursor-pointer items-center gap-2 group">
+                <div className={`flex h-5 w-9 items-center rounded-full p-1 transition-colors duration-300 ${inStock ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                  <div className={`h-3 w-3 rounded-full bg-white transition-transform duration-300 ${inStock ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+                <input type="checkbox" className="hidden" checked={inStock} onChange={(e) => setInStock(e.target.checked)} />
+                <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600 transition-colors">In Stock Only</span>
+              </label>
+
+            </div>
+
+            {/* SAĞ KISIM: Sıralama ve Temizle */}
+            <div className="flex items-center gap-4">
+              
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="h-9 rounded-lg border border-gray-200 bg-transparent px-3 text-sm font-semibold text-gray-700 outline-none transition focus:border-blue-500"
+              >
+                <option value="newest">Latest Arrivals</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+
+              {(search || category !== "All" || minPrice || maxPrice || inStock || sort !== "newest") && (
+                <button
+                  onClick={resetFilters}
+                  className="text-sm font-bold text-red-500 transition hover:text-red-700"
+                >
+                  Clear All
+                </button>
+              )}
+
+            </div>
+          </div>
         </div>
 
         {/* LOADING */}
@@ -443,14 +508,11 @@ export default function HomePage() {
                 Try another search term or category.
               </p>
 
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setCategory("All");
-                }}
-                className="mt-6 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700"
+             <button
+                onClick={resetFilters}
+                className="mt-6 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 shadow-lg shadow-blue-600/20"
               >
-                Clear Filters
+                Clear All Filters
               </button>
 
             </div>

@@ -13,7 +13,11 @@ const createOrder = async (req, res) => {
     }
 
     // 2. Kullanıcının sepetini bul
-    const cart = await Cart.findOne({ user: req.user.id }).populate("items.product");
+    // 2. Kullanıcının sepetini bul (BUNU BUL)
+    const cart = await Cart.findOne({ user: req.user.id }).populate({
+      path: "items.product",
+      select: "name price stock image seller" // YENİ: seller bilgisini ekledik
+    });
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ message: "Your cart is empty." });
@@ -68,6 +72,35 @@ const createOrder = async (req, res) => {
     // 5. Sepeti Boşalt (Checkout olduğu için)
     cart.items = [];
     await cart.save();
+    // 5. Sepeti Boşalt (Checkout olduğu için)
+    cart.items = [];
+    await cart.save();
+
+    // --- YENİ: SATICIYA CANLI BİLDİRİM (SOCKET.IO) FIRLATMA ---
+    const io = req.app.get("io"); // Server.js'de kaydettiğimiz io objesini alıyoruz
+    if (io) {
+      // Hangi satıcıların ürünleri satıldıysa onların ID'lerini benzersiz (Set) olarak topla
+      const sellersToNotify = new Set();
+      orderItems.forEach(item => {
+        // Sepetteki üründen satıcıyı bul (Yukarıda populate etmiştik)
+        const cartItem = cart.items.find(ci => ci.product && ci.product._id.toString() === item.product.toString());
+        // (Eski sepeti boşalttığımız için doğrudan sipariş verilmeden önceki ürün listesinden de alabilirsin. 
+        // En sağlamı döngü içinde `sellersToNotify.add(item.product.seller)` yapmaktır. Bizim kodda en kolayı şu:)
+      });
+
+      // Alternatif ve Kesin Yöntem: orderItems döngüsü (yukarıdaki for...of döngüsü) içine şunu eklemiştik, 
+      // Oraya gidip for döngüsü içinde sellersToNotify.add(item.product.seller.toString()) yapabilirsin.
+      // Topladığın satıcı ID'lerine bildirimi ateşle:
+      const uniqueSellers = [...new Set(cart.items.map(i => i.product?.seller?.toString()).filter(Boolean))];
+      
+      uniqueSellers.forEach(sellerId => {
+        io.emit(`seller_notification_${sellerId}`, {
+          message: "🎉 Tebrikler! Bir ürününüz az önce satıldı!",
+          orderId: newOrder._id
+        });
+      });
+    }
+    // -----------------------------------------------------------
 
     res.status(201).json({
       message: "Order created successfully.",
@@ -79,19 +112,65 @@ const createOrder = async (req, res) => {
   }
 };
 
-// SATICININ KENDİ SİPARİŞLERİNİ GETİR
+// SATICININ KENDİ SİPARİŞLERİNİ VE FİNANSAL İSTATİSTİKLERİNİ GETİR
 const getSellerOrders = async (req, res) => {
   try {
     // 1. Satıcının kendi ürünlerinin ID'lerini bul
     const sellerProducts = await Product.find({ seller: req.user.id }).select("_id");
-    const productIds = sellerProducts.map(p => p._id);
+    const productIds = sellerProducts.map(p => p._id.toString());
 
     // 2. İçinde bu satıcının ürünlerinden HERHANGİ BİRİ olan siparişleri getir
     const orders = await Order.find({
       "orderItems.product": { $in: productIds }
     }).populate("user", "name surname email").sort({ createdAt: -1 });
 
-    res.status(200).json({ orders });
+    // --- YENİ: SATICIYA ÖZEL FİNANSAL HESAPLAMALAR ---
+    let totalRevenue = 0;
+    let pendingOrdersCount = 0;
+    let deliveredOrdersCount = 0;
+    const monthlyData = {};
+
+    orders.forEach(order => {
+      // Bekleyen ve Teslim Edilen Sipariş Sayıları
+      if (order.status === "Pending" || order.status === "Processing") pendingOrdersCount++;
+      if (order.status === "Delivered") deliveredOrdersCount++;
+
+      // Satıcının sadece KENDİ ürünlerinden elde ettiği geliri hesapla
+      let orderSellerRevenue = 0;
+      order.orderItems.forEach(item => {
+        if (productIds.includes(item.product.toString())) {
+          // Sadece Teslim edilmiş siparişlerin parası satıcının cebine girer
+          if (order.status === "Delivered") {
+            orderSellerRevenue += (item.price * item.quantity);
+          }
+        }
+      });
+      totalRevenue += orderSellerRevenue;
+
+      // Grafik için Aylık Dağılım
+      if (order.status === "Delivered" && orderSellerRevenue > 0) {
+        const date = new Date(order.createdAt);
+        const month = date.toLocaleString('en-US', { month: 'short' }); // Jan, Feb, Mar...
+        if (!monthlyData[month]) monthlyData[month] = 0;
+        monthlyData[month] += orderSellerRevenue;
+      }
+    });
+
+    // Grafik verisini Recharts formatına çevir
+    const chartData = Object.keys(monthlyData).map(key => ({ name: key, revenue: monthlyData[key] }));
+    const finalChartData = chartData.length > 0 ? chartData : [{name: "No Data", revenue: 0}];
+    // ---------------------------------------------------
+
+    res.status(200).json({ 
+      orders,
+      stats: {
+        totalRevenue,
+        totalOrders: orders.length,
+        pendingOrdersCount,
+        deliveredOrdersCount
+      },
+      chartData: finalChartData
+    });
   } catch (error) {
     console.error("Get Seller Orders Error:", error);
     res.status(500).json({ message: "Server Error" });

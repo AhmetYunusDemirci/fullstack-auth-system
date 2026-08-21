@@ -55,13 +55,22 @@ const processPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid cart total." });
     }
 
+    // --- KUPON İNDİRİMİNİ UYGULA VE FORMATLA ---
+    let finalPaidPrice = totalPrice;
+    if (discountPercentage > 0) {
+      finalPaidPrice = totalPrice - (totalPrice * (discountPercentage / 100));
+    }
+
+    // Iyzico ondalıklı sayıları string olarak (Örn: "150.50") bekler.
+    const formattedPrice = totalPrice.toFixed(2); // İndirimsiz ham fiyat (Basket toplamıyla eşleşmek zorunda)
+    const formattedPaidPrice = finalPaidPrice.toFixed(2); // İndirimli, karttan çekilecek asıl tutar
+
     // 3. Iyzico Ödeme İsteği Nesnesi (Request Object)
-      // 3. Iyzico Ödeme İsteği Nesnesi (Request Object)
     const request = {
       locale: Iyzipay.LOCALE.TR,
       conversationId: "Order_" + Date.now(),
-      price: formattedTotalPrice,
-      paidPrice: formattedTotalPrice,
+      price: formattedPrice,
+      paidPrice: formattedPaidPrice,
       currency: Iyzipay.CURRENCY.TRY,
       installment: "1",
       basketId: cart._id.toString(),
@@ -140,7 +149,7 @@ const processPayment = async (req, res) => {
           user: req.user.id,
           orderItems,
           shippingAddress: addressForm,
-          totalPrice,
+          totalPrice: finalPaidPrice,
           isPaid: true,
           paidAt: Date.now(),
           status: "Processing", // Ödendiği için direkt işleniyor'a geçiyor
