@@ -40,6 +40,10 @@ fullstack-auth-system
 │  ├─ AGENTS.md
 │  ├─ app
 │  │  ├─ admin
+│  │  │  ├─ page.js
+│  │  │  └─ reviews
+│  │  │     └─ page.js
+│  │  ├─ bestsellers
 │  │  │  └─ page.js
 │  │  ├─ cart
 │  │  │  └─ page.js
@@ -69,12 +73,17 @@ fullstack-auth-system
 │  │  ├─ seller
 │  │  │  ├─ orders
 │  │  │  │  └─ page.js
-│  │  │  └─ products
-│  │  │     ├─ edit
-│  │  │     │  └─ [id]
-│  │  │     │     └─ page.js
-│  │  │     ├─ new
-│  │  │     │  └─ page.js
+│  │  │  ├─ products
+│  │  │  │  ├─ edit
+│  │  │  │  │  └─ [id]
+│  │  │  │  │     └─ page.js
+│  │  │  │  ├─ new
+│  │  │  │  │  └─ page.js
+│  │  │  │  └─ page.js
+│  │  │  └─ reviews
+│  │  │     └─ page.js
+│  │  ├─ sellers
+│  │  │  └─ [id]
 │  │  │     └─ page.js
 │  │  └─ wishlist
 │  │     └─ page.js

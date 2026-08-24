@@ -23,6 +23,10 @@ const productSchema = new mongoose.Schema(
     description: { type: String, required: [true, "Please add a description"], maxlength: [2000, "Description cannot exceed 2000 characters"] },
     price: { type: Number, required: true, min: 0 },
     stock: { type: Number, required: true, min: 0, default: 0 },
+    sold: {
+      type: Number,
+      default: 0,
+    },
     image: { type: String, default: "" },
     category: { type: String, required: true, trim: true },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },

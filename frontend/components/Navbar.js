@@ -13,6 +13,26 @@ export default function Navbar() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // --- SIDEBAR (DRAWER) STATELERİ ---
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [categories, setCategories] = useState([]);
+
+  // Navbar yüklendiğinde kategorileri veritabanından çek
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_URL}/products/categories`);
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data.categories || []);
+        }
+      } catch (err) {
+        console.error("Navbar categories error:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const loadUser = async () => {
     const token = localStorage.getItem("token");
@@ -57,6 +77,7 @@ export default function Navbar() {
   useEffect(() => {
     loadUser();
   }, []);
+
   // --- YENİ: CANLI BİLDİRİM (SOCKET.IO) DİNLEYİCİSİ ---
   useEffect(() => {
     // Sadece giriş yapmış satıcılar için soketi dinle
@@ -95,12 +116,26 @@ export default function Navbar() {
   };
 
   return (
+      <>
     <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/90 backdrop-blur-xl">
 
       <div className="mx-auto max-w-7xl px-6">
 
         <div className="flex h-20 items-center justify-between">
+             
 
+             {/* HAMBURGER MENÜ (TÜMÜ) BUTONU */}
+          <button 
+            onClick={() => setIsDrawerOpen(true)} 
+            className="flex items-center gap-1.5 font-bold text-slate-700 hover:text-blue-600 transition mr-4 p-2 rounded-lg hover:bg-slate-100"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            <span className="hidden md:inline">Tümü</span>
+          </button> 
           {/* LOGO */}
 
           <Link
@@ -151,6 +186,13 @@ export default function Navbar() {
                 <span className="hidden xl:inline">Wishlist</span>
               </Link>
             )}
+
+            <Link
+            href="/bestsellers"
+            className="flex items-center gap-1 text-sm font-semibold text-orange-600 hover:text-orange-700 transition"
+          >
+            🔥 Best Sellers
+          </Link>
 
             {user && (
               <Link href="/cart" className="nav-link flex items-center gap-2">
@@ -306,6 +348,14 @@ export default function Navbar() {
                 </Link>
               )}
 
+              <Link
+                href="/bestsellers"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-xl px-4 py-3 font-medium text-orange-600 hover:bg-orange-50 transition"
+              >
+                🔥 Best Sellers
+              </Link>
+
               {user && (
                 <Link href="/cart" onClick={() => setMobileOpen(false)} className="rounded-xl px-4 py-3 font-medium text-gray-700 hover:bg-gray-100">
                   My Cart
@@ -374,6 +424,132 @@ export default function Navbar() {
         )}
 
       </div>
+      
     </header>
+    {/* ========================================= */}
+      {/* --- SOL SIDEBAR (DRAWER) E-TİCARET MENÜSÜ --- */}
+      {/* ========================================= */}
+
+      {/* Arka Plan Karartması (Overlay) */}
+      {isDrawerOpen && (
+        <div 
+          className="fixed inset-0 z-[60] bg-black/60 transition-opacity"
+          onClick={() => setIsDrawerOpen(false)}
+        ></div>
+      )}
+
+      {/* Kayarak Gelen Panel */}
+      <div 
+        className={`fixed top-0 left-0 z-[70] h-full w-[85%] max-w-sm bg-white shadow-2xl transition-transform duration-300 ease-in-out flex flex-col overflow-y-auto ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        {/* Kullanıcı Karşılama ve Kapatma Butonu */}
+        <div className="bg-slate-900 text-white p-5 flex items-center justify-between sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-xl font-bold">
+              {user ? user.name.charAt(0).toUpperCase() : "👤"}
+            </div>
+            <span className="font-bold text-lg">
+              {user ? `Merhaba, ${user.name}` : "Merhaba, Giriş Yapın"}
+            </span>
+          </div>
+          <button onClick={() => setIsDrawerOpen(false)} className="text-white hover:text-red-400 transition p-1">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div className="py-4">
+          
+          {/* BÖLÜM 1: ÖNE ÇIKANLAR */}
+          <div className="px-6 py-3 border-b border-slate-100">
+            <h3 className="text-lg font-extrabold text-slate-800 mb-4">Öne Çıkanlar</h3>
+            <ul className="space-y-1">
+              <li>
+                <Link href="/bestsellers" onClick={() => setIsDrawerOpen(false)} className="flex items-center justify-between py-2 text-slate-600 hover:text-blue-600 font-medium transition group">
+                  <span>Çok Satanlar</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                </Link>
+              </li>
+              {/* Buraya Yeni Çıkanlar vb. eklenebilir */}
+            </ul>
+          </div>
+
+          {/* BÖLÜM 2: KATEGORİYE GÖRE ALIŞVERİŞ YAP */}
+          <div className="px-6 py-5 border-b border-slate-100">
+            <h3 className="text-lg font-extrabold text-slate-800 mb-4">Kategoriye Göre Alışveriş Yap</h3>
+            <ul className="space-y-1">
+              {/* Sadece ilk 4'ü veya tamamını göster */}
+              {categories.slice(0, showAllCategories ? categories.length : 4).map((cat, index) => (
+                <li key={index}>
+                  <Link 
+                    href={`/?category=${cat}`} // Veya /categories/${cat} - rotana göre ayarla
+                    onClick={() => setIsDrawerOpen(false)} 
+                    className="flex items-center justify-between py-2 text-slate-600 hover:text-blue-600 font-medium transition group"
+                  >
+                    <span className="capitalize">{cat}</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            
+            {/* DEVAMINI GÖRÜNTÜLE BUTONU */}
+            {categories.length > 4 && (
+              <button 
+                onClick={() => setShowAllCategories(!showAllCategories)}
+                className="flex items-center gap-2 mt-4 text-sm font-bold text-slate-500 hover:text-slate-800 transition"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`transition-transform duration-300 ${showAllCategories ? "rotate-180" : ""}`}>
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                {showAllCategories ? "Daha Az Göster" : "Tümünü Görüntüle"}
+              </button>
+            )}
+          </div>
+
+          {/* BÖLÜM 3: YARDIM VE AYARLAR */}
+          <div className="px-6 py-5 mb-10">
+            <h3 className="text-lg font-extrabold text-slate-800 mb-4">Yardım ve Ayarlar</h3>
+            <ul className="space-y-1">
+              
+              {/* YARDIM MERKEZİ - HERKESE AÇIK */}
+              <li>
+                <Link href="/help" onClick={() => setIsDrawerOpen(false)} className="flex items-center justify-between py-2 text-slate-600 hover:text-blue-600 font-medium transition group">
+                  <span>Yardım Merkezi</span>
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                </Link>
+              </li>
+
+              {user ? (
+                <>
+                  <li>
+                    <Link href="/profile" onClick={() => setIsDrawerOpen(false)} className="flex items-center justify-between py-2 text-slate-600 hover:text-blue-600 font-medium transition group">
+                      <span>Profil Hesabım</span>
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                    </Link>
+                  </li>
+                  <li>
+                    <button onClick={() => { setIsDrawerOpen(false); handleLogout(); }} className="w-full flex items-center justify-between py-2 text-slate-600 hover:text-red-600 font-medium transition group">
+                      <span>Çıkış Yap</span>
+                      <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <li>
+                  <Link href="/login" onClick={() => setIsDrawerOpen(false)} className="flex items-center justify-between py-2 text-slate-600 hover:text-blue-600 font-medium transition group">
+                    <span>Giriş Yap / Üye Ol</span>
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity">›</span>
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
+
+        </div>
+      </div>
+      {/* ========================================= */}
+      </>
   );
 }

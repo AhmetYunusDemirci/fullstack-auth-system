@@ -903,7 +903,7 @@ const handleCardChange = (e) => {
 
                 <div>
                   <label className="text-xs font-semibold text-gray-500 ml-1">Card Number</label>
-                  <input type="text" name="cardNumber" maxLength="19" required value={cardForm.cardNumber} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm font-mono tracking-widest" placeholder="4543 0000 0000 0000" />
+                  <input type="text" name="cardNumber" maxLength="19" required value={cardForm.cardNumber} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm font-mono tracking-widest" placeholder="4543 5900 0000 0006" />
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -913,7 +913,7 @@ const handleCardChange = (e) => {
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 ml-1">Year</label>
-                    <input type="text" name="expireYear" inputMode="numeric" required value={cardForm.expireYear} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm text-center font-mono" placeholder="YYYY" />
+                    <input type="text" name="expireYear" inputMode="numeric" required value={cardForm.expireYear} onChange={handleCardChange} className="w-full mt-1 bg-white border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition text-gray-900 text-sm text-center font-mono" placeholder="2029" />
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 ml-1">CVC</label>

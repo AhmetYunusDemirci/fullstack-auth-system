@@ -42,26 +42,40 @@ export default function ProductDetailPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
+
+  const [relatedProducts, setRelatedProducts] = useState([]);
+
+
   useEffect(() => {
-    const loadProduct = async () => {
+    const loadProductAndRelated = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `${API_URL}/products/${params.id}`
-        );
-
+        // 1. ANA ÜRÜNÜ ÇEK
+        const response = await fetch(`${API_URL}/products/${params.id}`);
         const data = await response.json();
 
         if (!response.ok) {
-          setError(
-            data.message || "Product could not be loaded."
-          );
+          setError(data.message || "Product could not be loaded.");
           return;
         }
 
         setProduct(data.product);
+
+        // --- 2. BENZER ÜRÜNLERİ (RELATED PRODUCTS) ÇEK ---
+        // (Sadece ana ürün başarılı çekildiyse bu aşamaya geçer)
+        try {
+          const relatedRes = await fetch(`${API_URL}/products/${params.id}/related`);
+          if (relatedRes.ok) {
+            const relatedData = await relatedRes.json();
+            setRelatedProducts(relatedData.products || []);
+          }
+        } catch (err) {
+          console.error("Failed to fetch related products", err);
+        }
+        // ------------------------------------------------
+
       } catch (error) {
         console.error(error);
         setError("Server Error");
@@ -71,21 +85,9 @@ export default function ProductDetailPage() {
     };
 
     if (params.id) {
-      loadProduct();
+      loadProductAndRelated();
     }
-   }, [params.id]);
-   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        // Token'ı çözerek içindeki 'id' bilgisini alıyoruz
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(payload.id);
-      } catch (e) {
-        console.error("Token decoding error", e);
-      }
-    }
-  }, []);
+  }, [params.id]);
 
   // -------------------------
   // WISHLIST LOGIC
@@ -1229,7 +1231,50 @@ export default function ProductDetailPage() {
 
         </div>
       </section>
+   {/* --- ÖNERİLEN ÜRÜNLER (RELATED PRODUCTS) --- */}
+      {relatedProducts.length > 0 && (
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-200 mt-10">
+          <div className="flex items-center gap-3 mb-8">
+            <span className="text-2xl">✨</span>
+            <h2 className="text-2xl font-bold text-slate-900">You Might Also Like</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {relatedProducts.map((item) => (
+              <Link href={`/products/${item._id}`} key={item._id} className="group block">
+                <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-lg hover:border-blue-200 group-hover:-translate-y-1">
+                  
+                  {/* Resim Kısmı */}
+                  <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-400 text-sm">No Image</div>
+                    )}
+                  </div>
+                  
+                  {/* Detay Kısmı */}
+                  <div className="p-4">
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">{item.category}</p>
+                    <h3 className="text-sm font-bold text-slate-800 line-clamp-2 mb-2 group-hover:text-blue-700 transition">
+                      {item.name}
+                    </h3>
+                    <div className="flex items-center justify-between mt-3">
+                      <p className="text-lg font-extrabold text-slate-900">${item.price}</p>
+                      <div className="flex items-center gap-1">
+                        <span className="text-amber-400 text-xs">★</span>
+                        <span className="text-xs font-bold text-slate-600">{item.rating ? item.rating.toFixed(1) : "New"}</span>
+                      </div>
+                    </div>
+                  </div>
 
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* ------------------------------------------- */}
     </main>
   );
 }

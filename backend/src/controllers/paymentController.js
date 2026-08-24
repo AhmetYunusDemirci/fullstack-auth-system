@@ -141,8 +141,11 @@ const processPayment = async (req, res) => {
           });
           
           // Gerçek stok düşüm işlemi!
-          item.product.stock -= item.quantity;
-          await item.product.save();
+          // GERÇEK SATIŞ: STOĞU DÜŞÜR + SATIŞ ADEDİNİ ARTIR
+item.product.stock -= item.quantity;
+item.product.sold += item.quantity;
+
+await item.product.save();
         }
 
         const newOrder = new Order({

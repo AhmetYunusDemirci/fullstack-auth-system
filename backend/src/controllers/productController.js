@@ -649,6 +649,88 @@ const deleteAdminReview = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+// EN ÇOK SATAN ÜRÜNLERİ GETİR (Ana Sayfa İçin)
+const getBestSellers = async (req, res) => {
+  try {
+    // Sadece stokta olan ürünleri, en çok satandan en aza doğru sırala, en fazla 4 tane getir
+    const products = await Product.find({ stock: { $gt: 0 }, sold: { $gt: 0 } })
+      .populate("seller", "name surname")
+      .sort({ sold: -1, rating: -1 }) // Önce çok satanlar, satış eşitse yıldızı yüksek olanlar
+      .limit(4);
+
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error("Get Best Sellers Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// TÜM ÇOK SATANLARI GETİR (Best Sellers Sayfası İçin)
+const getAllBestSellers = async (req, res) => {
+  try {
+    // Sadece stoğu olan ve en az 1 kez satılmış ürünleri getir (İlk 50 ürün)
+    const products = await Product.find({ stock: { $gt: 0 }, sold: { $gt: 0 } })
+      .populate("seller", "name surname")
+      .sort({ sold: -1, rating: -1 })
+      .limit(50); 
+
+    res.status(200).json({ products });
+  } catch (error) {
+    console.error("Get All Best Sellers Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// TÜM ÜRÜNLERE "SOLD: 0" ALANINI ZORLA EKLE VE SIFIRLA
+const fixOldProducts = async (req, res) => {
+  try {
+    const products = await Product.find();
+    
+    for (let p of products) {
+      // Eğer sold alanı yoksa veya değeri NaN ise zorla 0 yap.
+      // updateOne kullandığımız için description vb. kısıtlamalara takılmaz.
+      await Product.updateOne(
+        { _id: p._id }, 
+        { $set: { sold: 0 } }
+      );
+    }
+    
+    res.status(200).json({ message: "Bütün ürünlere 'sold' alanı başarıyla eklendi ve 0 yapıldı!" });
+  } catch (error) {
+    res.status(500).json({ message: "Hata", error });
+  }
+};
+// BENZER (ÖNERİLEN) ÜRÜNLERİ GETİR
+const getRelatedProducts = async (req, res) => {
+  try {
+    // 1. Önce tıklanan ana ürünü bul
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Product not found" });
+
+    // 2. Aynı kategorideki diğer ürünleri getir (En fazla 4 tane)
+    const relatedProducts = await Product.find({
+      category: product.category,
+      _id: { $ne: product._id }, // GÜÇLÜ MANTIK: $ne (Not Equal) -> Kendisini listeden çıkar
+      stock: { $gt: 0 } // Sadece stoğu olanları öner
+    })
+    .populate("seller", "name surname")
+    .limit(4);
+
+    res.status(200).json({ products: relatedProducts });
+  } catch (error) {
+    console.error("Get Related Products Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+// VERİTABANINDAKİ TÜM BENZERSİZ KATEGORİLERİ GETİR
+const getCategories = async (req, res) => {
+  try {
+    // Ürünlerde kullanılan tüm benzersiz (distinct) kategori isimlerini bulur
+    const categories = await Product.distinct("category");
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.error("Get Categories Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 module.exports = {
   getProducts,
   getProductById,
@@ -663,4 +745,9 @@ module.exports = {
   getSellerReviews,
   getAdminReviews, 
   deleteAdminReview,
+  getBestSellers,
+  getAllBestSellers,
+  fixOldProducts,
+  getRelatedProducts,
+  getCategories,
 };

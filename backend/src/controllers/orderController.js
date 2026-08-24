@@ -12,11 +12,9 @@ const createOrder = async (req, res) => {
       return res.status(400).json({ message: "Shipping address is fully required." });
     }
 
-    // 2. Kullanıcının sepetini bul
-    // 2. Kullanıcının sepetini bul (BUNU BUL)
     const cart = await Cart.findOne({ user: req.user.id }).populate({
       path: "items.product",
-      select: "name price stock image seller" // YENİ: seller bilgisini ekledik
+      select: "name price stock image seller sold" 
     });
 
     if (!cart || cart.items.length === 0) {
@@ -28,14 +26,10 @@ const createOrder = async (req, res) => {
     let totalPrice = 0;
 
     for (const item of cart.items) {
-      // Eğer ürün veritabanından silinmişse (null ise) atla
       if (!item.product) continue;
 
-      // Ürünün stoğu var mı kontrol et
       if (item.product.stock < item.quantity) {
-        return res.status(400).json({ 
-          message: `Not enough stock for ${item.product.name}. Available: ${item.product.stock}` 
-        });
+        return res.status(400).json({ message: `Not enough stock...` });
       }
 
       orderItems.push({
@@ -48,9 +42,16 @@ const createOrder = async (req, res) => {
 
       totalPrice += item.product.price * item.quantity;
       
-      // Ürünün stoğunu düş
-      item.product.stock -= item.quantity;
-      await item.product.save();
+      // BÜTÜN SIR BURADA! (Buranın böyle olduğundan emin ol)
+      await Product.findByIdAndUpdate(
+        item.product._id,
+        {
+          $inc: { 
+            stock: -item.quantity, // Stoğu düşür
+            sold: item.quantity    // Satışı artır (Aldığı miktar kadar)
+          }
+        }
+      );
     }
 
     if (orderItems.length === 0) {
@@ -72,25 +73,11 @@ const createOrder = async (req, res) => {
     // 5. Sepeti Boşalt (Checkout olduğu için)
     cart.items = [];
     await cart.save();
-    // 5. Sepeti Boşalt (Checkout olduğu için)
-    cart.items = [];
-    await cart.save();
 
     // --- YENİ: SATICIYA CANLI BİLDİRİM (SOCKET.IO) FIRLATMA ---
     const io = req.app.get("io"); // Server.js'de kaydettiğimiz io objesini alıyoruz
     if (io) {
       // Hangi satıcıların ürünleri satıldıysa onların ID'lerini benzersiz (Set) olarak topla
-      const sellersToNotify = new Set();
-      orderItems.forEach(item => {
-        // Sepetteki üründen satıcıyı bul (Yukarıda populate etmiştik)
-        const cartItem = cart.items.find(ci => ci.product && ci.product._id.toString() === item.product.toString());
-        // (Eski sepeti boşalttığımız için doğrudan sipariş verilmeden önceki ürün listesinden de alabilirsin. 
-        // En sağlamı döngü içinde `sellersToNotify.add(item.product.seller)` yapmaktır. Bizim kodda en kolayı şu:)
-      });
-
-      // Alternatif ve Kesin Yöntem: orderItems döngüsü (yukarıdaki for...of döngüsü) içine şunu eklemiştik, 
-      // Oraya gidip for döngüsü içinde sellersToNotify.add(item.product.seller.toString()) yapabilirsin.
-      // Topladığın satıcı ID'lerine bildirimi ateşle:
       const uniqueSellers = [...new Set(cart.items.map(i => i.product?.seller?.toString()).filter(Boolean))];
       
       uniqueSellers.forEach(sellerId => {
@@ -220,10 +207,77 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+// MÜŞTERİ İADE TALEBİ OLUŞTURMA
+const requestOrderReturn = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: "Order not found." });
+    
+    // Güvenlik: Sadece siparişin sahibi iade edebilir
+    if (order.user.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Unauthorized action." });
+    }
+
+    // Sadece teslim edilmiş ürünler iade edilebilir
+    if (order.status !== "Delivered") {
+      return res.status(400).json({ message: "You can only return delivered orders." });
+    }
+
+    // Zaten bir iade talebi var mı?
+    if (order.returnRequest && order.returnRequest.status !== 'None') {
+      return res.status(400).json({ message: "A return request already exists for this order." });
+    }
+
+    // İade talebini kaydet
+    order.returnRequest = {
+      status: 'Pending',
+      reason: reason || "No specific reason provided.",
+      requestedAt: Date.now()
+    };
+
+    await order.save();
+
+    res.status(200).json({ message: "Return request submitted successfully.", order });
+  } catch (error) {
+    console.error("Return Request Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+// SATICI/ADMIN İADE TALEBİNİ YANITLAMA (Approve/Reject)
+const processOrderReturn = async (req, res) => {
+  try {
+    const { returnStatus } = req.body; // 'Approved', 'Rejected' veya 'Refunded'
+    const order = await Order.findById(req.params.id);
+
+    if (!order) return res.status(404).json({ message: "Order not found." });
+
+    // Satıcı güvenlik kontrolü: Bu siparişte bu satıcının ürünü var mı? (Önceki updateSellerOrderStatus mantığıyla aynı)
+    const sellerProducts = await Product.find({ seller: req.user.id }).select("_id");
+    const productIds = sellerProducts.map(p => p._id.toString());
+    const hasSellerProduct = order.orderItems.some(item => productIds.includes(item.product.toString()));
+
+    if (!hasSellerProduct && req.user.role !== 'admin') {
+      return res.status(403).json({ message: "You don't have permission to process this return." });
+    }
+
+    order.returnRequest.status = returnStatus;
+    await order.save();
+
+    res.status(200).json({ message: `Return request marked as ${returnStatus}.`, order });
+  } catch (error) {
+    console.error("Process Return Error:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
 module.exports = {
   createOrder,
   getSellerOrders,
   updateSellerOrderStatus,
   getMyOrders, // Bunu ekledik
+  requestOrderReturn, // Müşteri iade talebi
+  processOrderReturn, // Satıcı/Admin iade talebini işleme
 };

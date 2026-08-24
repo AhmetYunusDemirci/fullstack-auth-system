@@ -1,14 +1,35 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import API_URL from "../lib/api";
 import Navbar from "../components/Navbar";
 
-export default function HomePage() {
+// Alt bileşeni Suspense ile sarmalamamız gerektiği için sayfayı ikiye bölüyoruz
+function HomeContent() {
+  const searchParams = useSearchParams(); // YENİ: URL'i dinler
+  const categoryFromUrl = searchParams.get("category"); // URL'deki ?category= değerini alır
+
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+
+  // YENİ: URL'de bir kategori parametresi varsa onu uygula ve ekrana kaydır
+  useEffect(() => {
+    if (categoryFromUrl) {
+      setCategory(categoryFromUrl); // Dropdown'ı seçilen kategoriyle eşitle
+      
+      // Müşteri menüden tıkladığında otomatik olarak ürünlere (aşağıya) kaysın
+      setTimeout(() => {
+        document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      setCategory("All");
+    }
+  }, [categoryFromUrl]);
+
+  // ... (Geri kalan kodların aynı şekilde devam edecek)
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -30,6 +51,23 @@ export default function HomePage() {
 
   // Kategorileri tutacağımız state
   const [categories, setCategories] = useState(["All"]);
+  const [bestSellers, setBestSellers] = useState([]);
+  const [bestSellersLoading, setBestSellersLoading] = useState(true);
+
+  // Çok satanları getiren fonksiyon
+  const loadBestSellers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/products/bestsellers/top`);
+      if (response.ok) {
+        const data = await response.json();
+        setBestSellers(data.products || []);
+      }
+    } catch (err) {
+      console.error("Çok satanlar yüklenemedi", err);
+    } finally {
+      setBestSellersLoading(false);
+    }
+  };
 
   // 1. Sadece ilk açılışta tüm kategorileri getiren fonksiyon
   const loadCategories = async () => {
@@ -82,8 +120,10 @@ export default function HomePage() {
     }
   }, [search, category, minPrice, maxPrice, inStock, sort]); // Bağımlılıklar (Dependencies) güncellendi
 // 1. Sayfa yüklendiğinde kategorileri çek
+  // Sayfa yüklendiğinde kategorileri ve çok satanları çek
   useEffect(() => {
     loadCategories();
+    loadBestSellers(); // YENİ
   }, []);
 
   // 2. Filtreler değiştiğinde ürünleri yeniden çek (Debounce ile)
@@ -283,7 +323,59 @@ export default function HomePage() {
         </div>
 
       </section>
+  {/* BEST SELLERS (ÇOK SATANLAR) */}
+      {!bestSellersLoading && bestSellers.length > 0 && (
+        <section className="mx-auto max-w-7xl px-6 pt-16 lg:pt-20">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-600 mb-3 border border-orange-200">
+                <span className="text-sm">🔥</span> Trending Now
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Best Sellers</h2>
+            </div>
+            {/* Animasyonlu ateş ikonu veya link eklenebilir */}
+          </div>
 
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {bestSellers.map((product) => (
+              <Link href={`/products/${product._id}`} key={`best-${product._id}`} className="group">
+                <article className="relative overflow-hidden rounded-2xl border-2 border-orange-100 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:border-orange-300 hover:-translate-y-1">
+                  
+                  {/* Satış Rozeti (Top Seller) */}
+                  <div className="absolute top-0 right-0 z-10">
+                     <div className="bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl flex items-center gap-1 shadow-sm">
+                       🔥 Top Seller
+                     </div>
+                  </div>
+
+                  <div className="relative h-56 bg-gray-100 overflow-hidden">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-gray-400">No Image</div>
+                    )}
+                  </div>
+                  
+                  <div className="p-5">
+                    {/* Yıldız Gösterimi (Opsiyonel) */}
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="text-amber-400 text-sm">★</span>
+                      <span className="text-xs font-bold text-gray-600">{product.rating ? product.rating.toFixed(1) : "New"}</span>
+                      {product.sold > 0 && <span className="text-[10px] text-gray-400 ml-1">({product.sold} sold)</span>}
+                    </div>
+                    
+                    <h3 className="truncate text-lg font-bold text-gray-900 transition group-hover:text-orange-600">{product.name}</h3>
+                    <div className="mt-4 flex items-end justify-between">
+                      <p className="text-2xl font-extrabold text-gray-900">${product.price}</p>
+                    </div>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+      {/* -------------------------------------- */}
       {/* PRODUCTS */}
 
       <section
@@ -728,5 +820,13 @@ export default function HomePage() {
       </footer>
 
     </main>
+  );
+}
+// Next.js'in URL (useSearchParams) kullanırken sayfanın bozulmaması için istediği güvenlik sarmalayıcısı (Suspense)
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

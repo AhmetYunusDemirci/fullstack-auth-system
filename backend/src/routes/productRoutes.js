@@ -16,13 +16,34 @@ const {
   getSellerReviews,
   getAdminReviews,
   deleteAdminReview,
+  getBestSellers,
+  getAllBestSellers,
+  fixOldProducts,
+  getRelatedProducts,
+  getCategories,
 } = require("../controllers/productController");
 
 const protect = require("../middleware/authMiddleware");
 const isSeller = require("../middleware/isSeller");
 
+
 // Herkes ürünleri görebilir
 router.get("/", getProducts);
+
+
+// Satıcı, tüm ürünlerine gelen yorumları tek bir yerde görür
+router.get("/seller/reviews", protect, isSeller, getSellerReviews);
+
+// --- ADMIN MODERASYON ROTALARI ---
+router.get("/admin/all-reviews", protect, getAdminReviews);
+router.delete("/admin/reviews/:productId/:reviewId", protect, deleteAdminReview);
+// ---------------------------------
+// En Çok Satan Ürünler (Ana Sayfa)
+router.get("/bestsellers/top", getBestSellers);
+// Tüm Çok Satanlar (Best Sellers Sayfası)
+router.get("/bestsellers/all", getAllBestSellers);
+// Veritabanı Düzeltme Rotası (Tarayıcıdan girip tetikleyeceğiz)
+router.get("/fix-db", fixOldProducts);
 
 // Seller sadece kendi ürünlerini görebilir
 router.get(
@@ -32,13 +53,11 @@ router.get(
   getMyProducts,
   getSellerReviews,
 );
-// Satıcı, tüm ürünlerine gelen yorumları tek bir yerde görür
-router.get("/seller/reviews", protect, isSeller, getSellerReviews);
 
-// --- ADMIN MODERASYON ROTALARI ---
-router.get("/admin/all-reviews", protect, getAdminReviews);
-router.delete("/admin/reviews/:productId/:reviewId", protect, deleteAdminReview);
-// ---------------------------------
+router.get("/:id/related", getRelatedProducts);
+
+// Tüm Benzersiz Kategoriler (Navbar Sidebar'ı için)
+router.get("/categories", getCategories);
 
 // Herkes tek ürünü görebilir
 router.get("/:id", getProductById);
