@@ -296,6 +296,55 @@ export default function AdminPage() {
       toast.error("Server connection error.");
     }
   };
+ // --- YENİ: ŞIK ONAY MODALI İÇİN STATE ---
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, orderId: null, returnStatus: null, message: "" });
+// --- UZUN İADE NEDENLERİNİ OKUMAK İÇİN YENİ MODAL ---
+  const [reasonModal, setReasonModal] = useState({ isOpen: false, text: "" });
+  // 1. AŞAMA: MODALI AÇAN FONKSİYON (Select kutusu değişince tetiklenir)
+  const handleReturnProcessClick = (orderId, returnStatus) => {
+    setConfirmModal({
+      isOpen: true,
+      orderId,
+      returnStatus,
+      message: `Bu iade talebinin durumunu "${returnStatus}" olarak değiştirmek istediğinize emin misiniz?`
+    });
+  };
+
+  // 2. AŞAMA: MODALDA "EVET" DENİLİNCE ÇALIŞAN ASIL FONKSİYON
+  const executeReturnProcess = async () => {
+    const { orderId, returnStatus } = confirmModal;
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`${API_URL}/orders/${orderId}/return-process`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ returnStatus }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success(`İade durumu ${returnStatus} yapıldı.`);
+        
+        // HATA 1 ÇÖZÜMÜ: setOrders yerine setAdminOrders kullanıyoruz
+        setAdminOrders(prevOrders => 
+          prevOrders.map(order => 
+            order._id === orderId 
+            ? { ...order, returnRequest: { ...order.returnRequest, status: returnStatus } } 
+            : order
+          )
+        );
+      } else {
+        toast.error(data.message || "Failed to process return.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Server connection error.");
+    } finally {
+      // İşlem bitince modalı kapat
+      setConfirmModal({ isOpen: false, orderId: null, returnStatus: null, message: "" });
+    }
+  };
 
   const handleUpdateMessageStatus = async (messageId, newStatus) => {
     const token = localStorage.getItem("token");
@@ -434,42 +483,54 @@ export default function AdminPage() {
           <div className="space-y-6">
             
             {/* STAT KARTLARI */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2></div>
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Total Admins</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalAdmins || 0}</h2></div>
-              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-gray-500">Normal Users</p><h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalNormalUsers || 0}</h2></div>
-              {/* --- YENİ: LIVE ACTIVE USERS KARTI --- */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 relative overflow-hidden transition hover:shadow-md">
-          {/* Yanıp sönen yeşil nokta (Live Indicator) */}
-          <div className="absolute top-5 right-5">
-             <span className="flex h-3 w-3 relative">
-               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-               <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-             </span>
-          </div>
-          
-          <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-2xl">
-            🌍
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Online Right Now</p>
-            <p className="text-3xl font-extrabold text-slate-900 mt-1">{liveUsers}</p>
-          </div>
-        </div>
-        {/* --------------------------------------- */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-sm font-semibold uppercase text-gray-500">Total Users</p>
+                <h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalUsers || 0}</h2>
+              </div>
               
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-blue-600">Total Products</p><h2 className="mt-4 text-4xl font-bold text-blue-900">{stats?.totalProducts || 0}</h2></div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-emerald-600">Total Orders</p><h2 className="mt-4 text-4xl font-bold text-emerald-900">{stats?.totalOrders || 0}</h2></div>
-              <div className="rounded-2xl border border-orange-100 bg-orange-50 p-6 shadow-sm"><p className="text-sm font-semibold uppercase text-orange-600">Open Tickets</p><h2 className="mt-4 text-4xl font-bold text-orange-900">{stats?.totalOpenTickets || 0}</h2></div>
+              <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+                <p className="text-sm font-semibold uppercase text-gray-500">Total Products</p>
+                <h2 className="mt-4 text-4xl font-bold text-gray-900">{stats?.totalProducts || 0}</h2>
+              </div>
+
+              {/* --- YENİ: GÜNLÜK ZİYARETÇİ KARTI --- */}
+              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 text-blue-200/50 text-7xl">📈</div>
+                <p className="text-sm font-semibold uppercase text-blue-600 relative z-10">Daily Visitors</p>
+                <h2 className="mt-4 text-4xl font-bold text-blue-900 relative z-10">{stats?.dailyVisitors || 0}</h2>
+              </div>
+              
+              {/* LIVE ACTIVE USERS KARTI */}
+              <div className="bg-white rounded-2xl p-6 border border-emerald-200 shadow-sm flex items-center justify-between relative overflow-hidden transition hover:shadow-md">
+                <div>
+                  <p className="text-sm font-semibold uppercase text-emerald-600">Online Now</p>
+                  <h2 className="mt-4 text-4xl font-bold text-emerald-900">{liveUsers}</h2>
+                </div>
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50"></span>
+                  <span className="relative text-2xl">🌍</span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-6 shadow-sm">
+                <p className="text-sm font-semibold uppercase text-emerald-600">Total Orders</p>
+                <h2 className="mt-4 text-4xl font-bold text-emerald-900">{stats?.totalOrders || 0}</h2>
+              </div>
+
+              <div className="rounded-2xl border border-orange-100 bg-orange-50 p-6 shadow-sm">
+                <p className="text-sm font-semibold uppercase text-orange-600">Open Tickets</p>
+                <h2 className="mt-4 text-4xl font-bold text-orange-900">{stats?.totalOpenTickets || 0}</h2>
+              </div>
             </div>
 
             {/* GRAFİKLER */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               
-              {/* GELİR GRAFİĞİ (LINE CHART) */}
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              {/* GELİR GRAFİĞİ (LINE CHART) - TAM GENİŞLİK YAPIYORUZ */}
+              <div className="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 mb-6">Revenue Trend (Last 6 Months)</h3>
-                <div className="h-72 w-full">
+                <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={stats?.monthlyRevenue || []}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -479,7 +540,7 @@ export default function AdminPage() {
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         formatter={(value) => [`$${value}`, "Revenue"]}
                       />
-                      <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={3} dot={{r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 6}} />
+                      <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={4} dot={{r: 5, fill: '#2563eb', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 8}} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -494,35 +555,58 @@ export default function AdminPage() {
                       <PieChart>
                         <Pie
                           data={stats.orderStatusDistribution}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
+                          cx="50%" cy="50%"
+                          innerRadius={70} outerRadius={90}
                           paddingAngle={5}
                           dataKey="value"
                         >
                           {stats.orderStatusDistribution.map((entry, index) => {
-                            // Durumlara göre renk belirleme
                             const colors = {
-                              'Delivered': '#10b981', // Emerald
-                              'Processing': '#3b82f6', // Blue
-                              'Pending': '#f59e0b', // Amber
-                              'Shipped': '#8b5cf6', // Violet
-                              'Cancelled': '#ef4444' // Red
+                              'Delivered': '#10b981', 'Processing': '#3b82f6', 
+                              'Pending': '#f59e0b', 'Shipped': '#8b5cf6', 'Cancelled': '#ef4444'
                             };
                             return <Cell key={`cell-${index}`} fill={colors[entry.name] || '#94a3b8'} />;
                           })}
                         </Pie>
+                        <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748b' }}/>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500">No order data available.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* YENİ: EN ÇOK SATAN KATEGORİLER (PIE CHART) */}
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-6">Top Selling Categories</h3>
+                <div className="h-72 w-full">
+                  {stats?.topCategories && stats.topCategories.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.topCategories}
+                          cx="50%" cy="50%"
+                          innerRadius={0} outerRadius={90} // İçi dolu pasta grafik
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {stats.topCategories.map((entry, index) => {
+                            // Kategoriler için canlı ve güzel bir renk paleti
+                            const categoryColors = ['#f43f5e', '#8b5cf6', '#06b6d4', '#f59e0b', '#10b981', '#3b82f6'];
+                            return <Cell key={`cell-${index}`} fill={categoryColors[index % categoryColors.length]} />;
+                          })}
+                        </Pie>
                         <RechartsTooltip 
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                          formatter={(value) => [`${value} items sold`, "Sales"]}
                         />
                         <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', color: '#64748b' }}/>
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                      No order data available to display.
-                    </div>
+                    <div className="flex h-full items-center justify-center text-sm text-gray-500">No category data available.</div>
                   )}
                 </div>
               </div>
@@ -623,22 +707,88 @@ export default function AdminPage() {
         {/* TAB 4: ORDERS */}
         {activeTab === "orders" && (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-100 p-6"><h2 className="text-xl font-bold text-gray-900">Order Management</h2></div>
+            <div className="border-b border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-900">Order Management</h2>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-gray-600">
                 <thead className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500">
-                  <tr><th className="px-6 py-4 font-semibold">Order ID</th><th className="px-6 py-4 font-semibold">Customer</th><th className="px-6 py-4 font-semibold">Total</th><th className="px-6 py-4 font-semibold">Status</th><th className="px-6 py-4 font-semibold text-right">Update Status</th></tr>
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Order ID</th>
+                    <th className="px-6 py-4 font-semibold">Customer</th>
+                    <th className="px-6 py-4 font-semibold">Total</th>
+                    <th className="px-6 py-4 font-semibold">Status</th>
+                    {/* --- YENİ: İADE BAŞLIĞI --- */}
+                    <th className="px-6 py-4 font-semibold">Return Request</th>
+                    <th className="px-6 py-4 font-semibold text-right">Update Status</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {adminOrders.length === 0 ? (<tr><td colSpan="5" className="px-6 py-12 text-center text-gray-500">No orders found.</td></tr>) : (
+                  {adminOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-12 text-center text-gray-500">No orders found.</td>
+                    </tr>
+                  ) : (
                     adminOrders.map((order) => (
                       <tr key={order._id} className="transition hover:bg-gray-50/50">
                         <td className="whitespace-nowrap px-6 py-4 font-mono text-xs">{order._id}</td>
-                        <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">{order.user?.name || "Deleted User"}</td>
+                        <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
+                          {order.user?.name || "Deleted User"}
+                        </td>
                         <td className="whitespace-nowrap px-6 py-4 font-semibold">${order.totalPrice}</td>
                         <td className="whitespace-nowrap px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${order.status === "Delivered" ? "bg-emerald-100 text-emerald-700" : order.status === "Cancelled" ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"}`}>{order.status}</span>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            order.status === "Delivered" ? "bg-emerald-100 text-emerald-700" : 
+                            order.status === "Cancelled" ? "bg-red-100 text-red-700" : 
+                            "bg-blue-100 text-blue-700"
+                          }`}>
+                            {order.status}
+                          </span>
                         </td>
+                        
+                       {/* --- YENİ İADE SÜTUNU (SELECT YAPISI İLE SONRADAN DEĞİŞTİRİLEBİLİR) --- */}
+                        <td className="px-6 py-4">
+                          {order.returnRequest && order.returnRequest.status !== 'None' ? (
+                            <div className="flex flex-col gap-2">
+                              {/* HATA 2 ÇÖZÜMÜ: İade durumu için şık Select menüsü */}
+                              <select 
+                                value={order.returnRequest.status}
+                                onChange={(e) => handleReturnProcessClick(order._id, e.target.value)}
+                                className={`border rounded-lg px-2 py-1.5 text-[11px] font-bold uppercase tracking-wider outline-none cursor-pointer w-full transition ${
+                                  order.returnRequest.status === 'Pending' ? 'text-orange-700 border-orange-200 bg-orange-50' :
+                                  order.returnRequest.status === 'Approved' ? 'text-emerald-700 border-emerald-200 bg-emerald-50' :
+                                  order.returnRequest.status === 'Refunded' ? 'text-blue-700 border-blue-200 bg-blue-50' :
+                                  'text-red-700 border-red-200 bg-red-50'
+                                }`}
+                              >
+                                <option value="Pending">Pending (Bekliyor)</option>
+                                <option value="Approved">Approved (Onaylandı)</option>
+                                <option value="Rejected">Rejected (Reddedildi)</option>
+                                <option value="Refunded">Refunded (İade Edildi)</option>
+                              </select>
+
+                              {order.returnRequest.reason && (
+                                <div className="mt-1 flex flex-col items-start">
+                                  <span className="text-[10px] text-gray-500 italic line-clamp-2 leading-tight w-full max-w-[180px]">
+                                    Neden: "{order.returnRequest.reason}"
+                                  </span>
+                                  {order.returnRequest.reason.length > 40 && (
+                                    <button 
+                                      onClick={() => setReasonModal({ isOpen: true, text: order.returnRequest.reason })}
+                                      className="text-[10px] font-bold text-blue-600 hover:text-blue-800 transition mt-0.5"
+                                    >
+                                      Tümünü Oku...
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300">İade Yok</span>
+                          )}
+                        </td>
+                        {/* ------------------------------------------------ */}
+
                         <td className="whitespace-nowrap px-6 py-4 text-right">
                           <select 
                             value={order.status} 
@@ -986,6 +1136,71 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {/* ======================================= */}
+      {/* HATA 3 ÇÖZÜMÜ: ŞIK ONAY MODALI (ADMIN) */}
+      {/* ======================================= */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Değişikliği Onayla</h3>
+            <p className="text-sm text-gray-500 mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button 
+                onClick={() => setConfirmModal({ isOpen: false, orderId: null, returnStatus: null, message: "" })}
+                className="px-4 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                İptal Et
+              </button>
+              <button 
+                onClick={executeReturnProcess}
+                className="px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition shadow-lg shadow-blue-600/20"
+              >
+                Evet, Güncelle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ======================================= */}
+      {/* ======================================= */}
+      {/* ======================================= */}
+      {/* PREMIUM İADE NEDENİ OKUMA MODALI (ADMIN) */}
+      {/* ======================================= */}
+      {reasonModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-800">İade Nedeni Detayı</h3>
+              <button onClick={() => setReasonModal({ isOpen: false, text: "" })} className="text-slate-400 hover:text-red-500 transition">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            
+            {/* Modal Content */}
+            <div className="p-6">
+              
+              {/* DÜZELTME: break-words ve break-all sayesinde boşluksuz harfler bile zorla alt satıra atılır! */}
+              <div className="relative rounded-xl bg-orange-50/50 p-5 text-sm text-slate-700 leading-relaxed max-h-60 overflow-y-auto break-words whitespace-pre-wrap border border-orange-100/50">
+                <span className="text-6xl absolute -top-4 -left-1 text-orange-200/40 select-none font-serif">"</span>
+                <span className="relative z-10">{reasonModal.text}</span>
+              </div>
+              
+              <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={() => setReasonModal({ isOpen: false, text: "" })}
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-xl transition shadow-md"
+                >
+                  Anladım, Kapat
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ======================================= */}
     </main>
   );
 }

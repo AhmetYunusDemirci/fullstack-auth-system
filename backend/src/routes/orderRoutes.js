@@ -9,7 +9,9 @@ const { requestOrderReturn, processOrderReturn } = require("../controllers/order
 router.post("/:id/return", protect, requestOrderReturn);
 
 // Satıcı iadeyi onaylar/reddeder
-router.put("/:id/return-process", protect, isSeller, processOrderReturn);
+// Satıcı veya Admin iadeyi onaylar/reddeder
+// DİKKAT: isSeller kaldırıldı, çünkü processOrderReturn içinde yetki kontrolü yapıyoruz!
+router.put("/:id/return-process", protect, processOrderReturn);
 // Sadece giriş yapmış kullanıcılar sipariş oluşturabilir
 router.post("/", protect, createOrder);
 

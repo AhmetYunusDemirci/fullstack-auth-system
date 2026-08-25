@@ -211,6 +211,12 @@ const getMyOrders = async (req, res) => {
 const requestOrderReturn = async (req, res) => {
   try {
     const { reason } = req.body;
+
+    // GÜVENLİK: İade nedeni 250 karakterden uzun olamaz!
+    if (reason && reason.length > 250) {
+      return res.status(400).json({ message: "İade nedeni en fazla 250 karakter olabilir." });
+    }
+
     const order = await Order.findById(req.params.id);
 
     if (!order) return res.status(404).json({ message: "Order not found." });

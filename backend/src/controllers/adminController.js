@@ -60,59 +60,53 @@ const getStats = async (req, res) => {
     const totalOrders = await Order.countDocuments();
     const totalOpenTickets = await ContactMessage.countDocuments({ status: "Open" });
 
-    // --- YENİ: GRAFİKLER İÇİN SİPARİŞ DURUMLARI (ORDER STATUS) ---
-    // Hangi siparişten kaç tane var? (Pending, Shipped, Delivered vb.)
+    // --- YENİ: GÜNLÜK ZİYARETÇİ SİMÜLASYONU ---
+    // (Gerçekte Google Analytics API veya Redis kullanılır, biz mantıklı bir simülasyon yapıyoruz)
+    const baseVisitors = 150;
+    const dailyVisitors = baseVisitors + Math.floor(Math.random() * (totalUsers * 2)); 
+
+    // --- GRAFİK 1 İÇİN SİPARİŞ DURUMLARI (ORDER STATUS) ---
     const orderStatusDistribution = await Order.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 }
-        }
-      },
-      {
-        $project: {
-          name: "$_id",
-          value: "$count",
-          _id: 0
-        }
-      }
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+      { $project: { name: "$_id", value: "$count", _id: 0 } }
     ]);
 
-    // --- YENİ: GRAFİKLER İÇİN AYLIK GELİR (REVENUE) ---
-    // Son 6 ayın gelirlerini (Sadece Delivered olanlardan) hesapla
+    // --- YENİ: GRAFİK 2 (PASTA GRAFİK) İÇİN EN ÇOK SATAN KATEGORİLER ---
+    const topCategories = await Product.aggregate([
+      { $match: { sold: { $gt: 0 } } }, // Sadece satışı olan ürünleri al
+      {
+        $group: {
+          _id: "$category",
+          totalSold: { $sum: "$sold" } // Kategorideki tüm satışları topla
+        }
+      },
+      { $sort: { totalSold: -1 } }, // En çok satandan aza doğru sırala
+      { $limit: 5 }, // En iyi 5 kategoriyi al (Pasta grafiği çok karmaşık olmasın diye)
+      { $project: { name: "$_id", value: "$totalSold", _id: 0 } } // Recharts formatına uygun hale getir
+    ]);
+
+    // Eğer hiç satış yoksa boş durmaması için varsayılan data gönderelim
+    const finalTopCategories = topCategories.length > 0 ? topCategories : [
+      { name: "Electronics", value: 10 }, { name: "Clothing", value: 5 }, { name: "Home", value: 2 }
+    ];
+
+    // --- GRAFİK 3 İÇİN AYLIK GELİR (REVENUE) ---
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    sixMonthsAgo.setDate(1); // 6 ay öncenin 1. gününe git
+    sixMonthsAgo.setDate(1);
 
     const monthlyRevenue = await Order.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: sixMonthsAgo },
-          status: "Delivered" // Sadece teslim edilen, kesinleşmiş paralar
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" }
-          },
-          revenue: { $sum: "$totalPrice" }
-        }
-      },
-      {
-        $sort: { "_id.year": 1, "_id.month": 1 }
-      }
+      { $match: { createdAt: { $gte: sixMonthsAgo }, status: "Delivered" } },
+      { $group: { _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } }, revenue: { $sum: "$totalPrice" } } },
+      { $sort: { "_id.year": 1, "_id.month": 1 } }
     ]);
 
-    // Ay isimlerini (Oca, Şub, Mar vb.) frontend için hazırlama
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const formattedRevenue = monthlyRevenue.map(item => ({
       name: `${monthNames[item._id.month - 1]}`,
       revenue: item.revenue
     }));
 
-    // Eğer veritabanında henüz teslim edilmiş sipariş yoksa, grafiğin boş kalmaması için dummy (sahte) veri gönder
     const finalRevenueData = formattedRevenue.length > 0 ? formattedRevenue : [
       { name: "Jan", revenue: 0 }, { name: "Feb", revenue: 0 }, { name: "Mar", revenue: 0 }
     ];
@@ -124,8 +118,10 @@ const getStats = async (req, res) => {
       totalProducts,
       totalOrders,
       totalOpenTickets,
-      orderStatusDistribution, // Pasta Grafik için
-      monthlyRevenue: finalRevenueData // Çizgi Grafik için
+      dailyVisitors, // YENİ
+      topCategories: finalTopCategories, // YENİ: Pasta Grafik İçin
+      orderStatusDistribution,
+      monthlyRevenue: finalRevenueData
     });
   } catch (error) {
     console.error(error);

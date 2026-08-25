@@ -119,9 +119,12 @@ export default function SellerReviewsPage() {
 
                     {/* Satıcı daha önce cevap verdiyse göster */}
                     {review.sellerReply && review.sellerReply.comment && (
-                      <div className="mt-4 bg-amber-50/50 border-l-4 border-amber-400 pl-4 py-2 rounded-r-lg">
-                        <span className="text-[10px] font-bold text-amber-600 uppercase">Your Response:</span>
-                        <p className="text-xs text-slate-600 italic mt-1 line-clamp-2">{review.sellerReply.comment}</p>
+                      <div className="mt-4 bg-amber-50/50 border-l-4 border-amber-400 pl-4 py-3 rounded-r-lg shadow-sm">
+                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider block mb-1">Your Response:</span>
+                        {/* DÜZELTME: line-clamp-2 kaldırıldı, yerine break-words ve whitespace-pre-wrap eklendi */}
+                        <p className="text-sm text-slate-700 italic break-words whitespace-pre-wrap leading-relaxed">
+                          {review.sellerReply.comment}
+                        </p>
                       </div>
                     )}
                   </div>

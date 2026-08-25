@@ -13,11 +13,13 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // MODAL İÇİN GEREKLİ YENİ STATE'LER
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [returnReason, setReturnReason] = useState("");
+  
+  // TEK VE TEMİZ STATE: Tüm iade modalı bilgilerini burada tutuyoruz
+  const [returnModal, setReturnModal] = useState({ 
+    isOpen: false, 
+    orderId: null, 
+    reason: "" 
+  });
 
   const loadMyOrders = async () => {
     const token = localStorage.getItem("token");
@@ -50,32 +52,31 @@ export default function MyOrdersPage() {
 
   // İade butonuna tıklanınca modal'ı açacak fonksiyon
   const openReturnModal = (orderId) => {
-    setSelectedOrderId(orderId);
-    setReturnReason(""); // Önceki yazılanları temizle
-    setIsModalOpen(true);
+    setReturnModal({ isOpen: true, orderId: orderId, reason: "" });
   };
 
   // Modal içindeki Onayla butonuna basınca çalışacak API fonksiyonu
   const submitReturnRequest = async () => {
-    if (!returnReason.trim()) {
+    // Boşlukları silip (trim) kontrol ediyoruz
+    if (!returnModal.reason || returnModal.reason.trim() === "") {
       toast.error("Lütfen bir iade nedeni belirtin.");
       return;
     }
 
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_URL}/orders/${selectedOrderId}/return`, {
+      const res = await fetch(`${API_URL}/orders/${returnModal.orderId}/return`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}` 
         },
-        body: JSON.stringify({ reason: returnReason })
+        body: JSON.stringify({ reason: returnModal.reason.trim() }) // Temizlenmiş metni gönder
       });
 
       if (res.ok) {
         toast.success("İade talebiniz başarıyla alındı!");
-        setIsModalOpen(false); // Başarılı olunca modalı kapat
+        setReturnModal({ isOpen: false, orderId: null, reason: "" }); // Modalı kapat ve sıfırla
         loadMyOrders(); // Sayfadaki siparişleri güncelle
       } else {
         const data = await res.json();
@@ -216,7 +217,7 @@ export default function MyOrdersPage() {
                   <div className="text-right">
                     {order.status === "Delivered" && (!order.returnRequest || order.returnRequest.status === 'None') && (
                       <button 
-                        onClick={() => openReturnModal(order._id)} // Yeni fonksiyona bağlandı
+                        onClick={() => openReturnModal(order._id)}
                         className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100 shadow-sm"
                       >
                         İade Talep Et
@@ -246,7 +247,7 @@ export default function MyOrdersPage() {
       {/* ========================================= */}
       {/* ŞIK İADE MODALI (Bulanık Arka Planlı Popup) */}
       {/* ========================================= */}
-      {isModalOpen && (
+      {returnModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all">
           
           <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -260,7 +261,7 @@ export default function MyOrdersPage() {
                 <h3 className="text-xl font-extrabold text-red-900">İade Talebi Oluştur</h3>
               </div>
               <button 
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setReturnModal({ isOpen: false, orderId: null, reason: "" })}
                 className="text-red-400 hover:text-red-700 transition"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -273,19 +274,25 @@ export default function MyOrdersPage() {
                 Siparişinizi neden iade etmek istediğinizi kısaca açıklar mısınız? Bu bilgi, size daha iyi hizmet verebilmemiz için mağazaya iletilecektir.
               </p>
               
-              <textarea
-                rows="4"
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-400/10 resize-none"
-                placeholder="Örn: Ürün beklediğimden küçük geldi, Rengi fotoğraftaki gibi değil..."
-                value={returnReason}
-                onChange={(e) => setReturnReason(e.target.value)}
-              ></textarea>
+              <div className="relative mb-6">
+                <textarea 
+                  value={returnModal.reason}
+                  onChange={(e) => setReturnModal(prev => ({ ...prev, reason: e.target.value }))}
+                  maxLength={250}
+                  placeholder="Örn: Ürün hasarlı geldi, bedeni uymadı vb."
+                  className="w-full h-24 rounded-xl border border-gray-200 bg-gray-50 p-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition resize-none"
+                ></textarea>
+                <p className={`text-right text-xs mt-1 ${returnModal.reason.length >= 250 ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                  {returnModal.reason.length} / 250 karakter
+                </p>
+              </div>
+              
             </div>
 
             {/* Modal Butonlar */}
             <div className="bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-slate-100">
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setReturnModal({ isOpen: false, orderId: null, reason: "" })}
                 className="rounded-xl px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200 transition"
               >
                 Vazgeç
